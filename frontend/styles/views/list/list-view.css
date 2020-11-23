@@ -1,0 +1,43 @@
+:host {
+  background-color: var(--lumo-contrast-10pct);
+  box-sizing: border-box;
+  display: block;
+  font-size: var(--lumo-font-size-m);
+  height: 100%;
+  overflow: auto;
+  padding: var(--lumo-space-m) var(--lumo-space-l);
+}
+
+vaadin-grid-pro img {
+  border-radius: 50%;
+
+  height: var(--lumo-size-m);
+  width: var(--lumo-size-m);
+  object-fit: cover;
+}
+.name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+vaadin-board {
+  margin: 0 auto;
+}
+.wrapper {
+  display: flex;
+  padding: var(--lumo-space-s);
+}
+.card {
+  align-items: baseline;
+  background-color: var(--lumo-base-color);
+  border-radius: var(--lumo-border-radius);
+  box-shadow: var(--lumo-box-shadow-xs);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+  height: 400px;
+}
+.space-m {
+  padding: var(--lumo-space-m);
+}
+

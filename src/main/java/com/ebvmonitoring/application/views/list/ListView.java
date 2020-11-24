@@ -3,16 +3,19 @@ package com.ebvmonitoring.application.views.list;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.board.Board;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.timepicker.TimePicker;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
 import org.apache.commons.lang3.StringUtils;
 
@@ -30,6 +33,7 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.ebvmonitoring.application.views.main.MainView;
+import org.atmosphere.interceptor.AtmosphereResourceStateRecovery;
 
 
 @Route(value = "list", layout = MainView.class)
@@ -44,8 +48,12 @@ public class ListView extends Div implements AfterNavigationObserver {
     private GridPro<Service> grid;
     private ListDataProvider<Service> dataProvider;
 
+    private Grid<ServiceBox> serviceBoxGrid;
+
     protected Chart servicestatus;
 
+    private Grid.Column<ServiceBox> servicesNameColumn;
+    private Grid.Column<ServiceBox> servicesStatusColumn;
 
     private Grid.Column<Service> serviceNameColumn;
     private Grid.Column<Service> dateColumn;
@@ -58,9 +66,9 @@ public class ListView extends Div implements AfterNavigationObserver {
     public ListView() {
         setId("list-view");
 
-
-
-
+        /*serviceBoxGrid.addColumn(ServiceBox::getServicesName);
+        serviceBoxGrid.addColumn(ServiceBox::getServicesStatus);
+        serviceBoxGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER);*/
 
         //------------------------------Pie Chart-----------------------------------------------
         servicestatus = new Chart(ChartType.PIE);
@@ -101,6 +109,8 @@ public class ListView extends Div implements AfterNavigationObserver {
         add(board);
 
 
+        Button b1 = new Button("Aktuelle Daten anfordern");
+        add(b1);
 
         setSizeFull();
         createGrid();
@@ -109,9 +119,9 @@ public class ListView extends Div implements AfterNavigationObserver {
         addFiltersToGrid();
         add(grid);
 
-        //WrapperCard gridWrapper = new WrapperCard("wrapper", new Component[] { new H3("Log"), grid }, "card");
+        WrapperCard gridWrapper = new WrapperCard("wrapper", new Component[] { grid }, "card");
 
-        //board.addRow(gridWrapper);
+        board.addRow(gridWrapper);
 
     }
 
@@ -125,7 +135,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         grid = new GridPro<>();
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER,
                 GridVariant.LUMO_COLUMN_BORDERS);
-        grid.setHeight("100%");
+        grid.setHeight("50%");
 
         dataProvider = new ListDataProvider<>(getServices());
         grid.setDataProvider(dataProvider);
@@ -142,7 +152,7 @@ public class ListView extends Div implements AfterNavigationObserver {
 //-------------------------------------Spalten erstellen---------------------------------------------
     private void createServiceNameColumn() {
         serviceNameColumn = grid.addColumn(Service::getService, "id").setHeader("Servicebezeichnung").setAutoWidth(true)
-                /*.setWidth("400px")*/.setFlexGrow(0);
+                .setFlexGrow(0);
     }
 
     private void createDateColumn() {
@@ -151,22 +161,22 @@ public class ListView extends Div implements AfterNavigationObserver {
                         client -> LocalDate.parse(client.getDatum()),
                         DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                 .setComparator(Service::getDatum).setHeader("Datum")
-                .setWidth("200px").setFlexGrow(0);
+                .setWidth("300px").setFlexGrow(0);
     }
 
     private void createTimeColumn() {
         timeColumn = grid.addColumn(Service::getUhrzeit, "uhrzeit").setHeader("Uhrzeit")
-                .setWidth("200px").setFlexGrow(0);
+                .setWidth("300px").setFlexGrow(0);
     }
 
     private void createStatusColumn() {
         statusColumn = grid.addColumn(Service::getStatus, "status").setHeader("Status")
-                .setWidth("200px").setFlexGrow(0);
+                .setWidth("300px").setFlexGrow(0);
     }
 
     private void createResponseTimeColumn() {
         responseColumn = grid.addColumn(Service::getAntwortzeit, "antwortzeit").setHeader("Antwortzeit")
-                .setWidth("200px").setFlexGrow(0);
+                .setWidth("300px").setFlexGrow(0);
     }
 
 //---------------------------------------------Filter-------------------------------------------------
@@ -300,5 +310,10 @@ public class ListView extends Div implements AfterNavigationObserver {
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
         servicesH2.setText("Service 1,Service 2, Service 3, Service4, ...");
+
+        /*List<ServiceBox> gridItems = new ArrayList<>();
+        gridItems.add(new ServiceBox("Service 1", "läuft"));
+        serviceBoxGrid.setItems(gridItems);*/
     }
+
 }

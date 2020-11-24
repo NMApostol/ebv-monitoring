@@ -136,6 +136,11 @@
             <artifactId>dcharts-widget</artifactId>
             <version>1.7.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.vaadin.addons</groupId>
+            <artifactId>gridview</artifactId>
+            <version>0.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>

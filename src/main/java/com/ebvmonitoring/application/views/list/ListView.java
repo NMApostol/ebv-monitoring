@@ -8,12 +8,17 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.board.Board;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexComponent;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
@@ -52,9 +57,10 @@ public class ListView extends Div implements AfterNavigationObserver {
 
     protected Chart servicestatus;
 
-    private Grid.Column<ServiceBox> servicesNameColumn;
-    private Grid.Column<ServiceBox> servicesStatusColumn;
+    /*private Grid.Column<ServiceBox> servicesNameColumn;
+    private Grid.Column<ServiceBox> servicesStatusColumn;*/
 
+    private Grid.Column<Service> statusImgColumn;
     private Grid.Column<Service> serviceNameColumn;
     private Grid.Column<Service> dateColumn;
     private Grid.Column<Service> timeColumn;
@@ -107,6 +113,8 @@ public class ListView extends Div implements AfterNavigationObserver {
         );
 
         add(board);
+        Text textArea = new Text(" LOG");
+        board.addRow(textArea);
 
 
         Button b1 = new Button("Aktuelle Daten anfordern");
@@ -142,6 +150,7 @@ public class ListView extends Div implements AfterNavigationObserver {
     }
 
     private void addColumnsToGrid() {
+        createServiceImgColumn();
         createServiceNameColumn();
         createDateColumn();
         createTimeColumn();
@@ -150,6 +159,20 @@ public class ListView extends Div implements AfterNavigationObserver {
     }
 
 //-------------------------------------Spalten erstellen---------------------------------------------
+
+    private void createServiceImgColumn(){
+        statusImgColumn = grid.addColumn(new ComponentRenderer<>(client -> {
+            HorizontalLayout hl = new HorizontalLayout();
+            hl.setAlignItems(FlexComponent.Alignment.CENTER);
+            Image img = new Image(client.getStatusimg(), "");
+            Span span = new Span();
+            span.setClassName("name");
+            hl.add(img);
+            return hl;
+        })).setComparator( Service::getStatusimg).setHeader("Status").setAutoWidth(true);
+
+    }
+
     private void createServiceNameColumn() {
         serviceNameColumn = grid.addColumn(Service::getService, "id").setHeader("Servicebezeichnung").setAutoWidth(true)
                 .setFlexGrow(0);
@@ -161,27 +184,30 @@ public class ListView extends Div implements AfterNavigationObserver {
                         client -> LocalDate.parse(client.getDatum()),
                         DateTimeFormatter.ofPattern("dd.MM.yyyy")))
                 .setComparator(Service::getDatum).setHeader("Datum")
-                .setWidth("300px").setFlexGrow(0);
+                .setAutoWidth(true);
     }
 
     private void createTimeColumn() {
         timeColumn = grid.addColumn(Service::getUhrzeit, "uhrzeit").setHeader("Uhrzeit")
-                .setWidth("300px").setFlexGrow(0);
+                .setAutoWidth(true);
     }
 
     private void createStatusColumn() {
-        statusColumn = grid.addColumn(Service::getStatus, "status").setHeader("Status")
-                .setWidth("300px").setFlexGrow(0);
+        statusColumn = grid.addColumn(Service::getStatus, "status").setHeader("Statuscode")
+                .setAutoWidth(true);
     }
 
     private void createResponseTimeColumn() {
         responseColumn = grid.addColumn(Service::getAntwortzeit, "antwortzeit").setHeader("Antwortzeit")
-                .setWidth("300px").setFlexGrow(0);
+                .setAutoWidth(true);
     }
 
 //---------------------------------------------Filter-------------------------------------------------
     private void addFiltersToGrid() {
         HeaderRow filterRow = grid.appendHeaderRow();
+
+        //Status Image (Rot | Grün) Filter
+
 
         //Servicebezeichnung Filter
         TextField serviceFilter = new TextField();
@@ -266,29 +292,20 @@ public class ListView extends Div implements AfterNavigationObserver {
     //Muss noch auf Datenbankwerte umgeschrieben werden
     private List<Service> getServices() {
         return Arrays.asList(
-                createService("Service 1696296362639629863982683682638", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("Service 2", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("Service 3", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("Service 4", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("Service 5", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("Service 6", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("Service 7", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("Service 8", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("Service 2", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("Service 3", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("Service 4", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("Service 1", "2020-11-22", "12:00", "Success", "113 ms")
+                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
+                createService("images/StatusImgRot.png", "Service 2", "2020-11-23", "12:15", "Failure", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 3", "2020-11-22", "12:00", "Success", "113 ms"),
+                createService("images/StatusImgRot.png", "Service 4", "2020-11-23", "12:15", "Failure", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
+                createService("images/StatusImgRot.png", "Service 5", "2020-11-23", "12:15", "Failure", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Warning", "113 ms")
         );
     }
 
-    private Service createService(String servicename, String date, String time,
+    private Service createService(String statusimg, String servicename, String date, String time,
                                  String status, String response) {
         Service c = new Service();
+        c.setStatusimg(statusimg);
         c.setService(servicename);
         c.setDatum(date);
         c.setUhrzeit(time);

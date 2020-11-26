@@ -5,6 +5,7 @@ import java.sql.Date;
 
 public class Service {
 
+    private String statusimg;
     private String service;
     private String datum;
     private String uhrzeit;
@@ -49,5 +50,13 @@ public class Service {
 
     public void setService(String service) {
         this.service = service;
+    }
+
+    public String getStatusimg() {
+        return statusimg;
+    }
+
+    public void setStatusimg(String statusimg) {
+        this.statusimg = statusimg;
     }
 }

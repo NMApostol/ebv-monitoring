@@ -44,31 +44,13 @@ vaadin-board {
 vaadin-chart {
   padding-top: var(--lumo-space-s);
 }
-.highcharts-point.highcharts-color-0,
-.highcharts-legend-item.highcharts-color-0 .highcharts-point,
-.highcharts-tooltip .highcharts-color-0 {
-  fill: #90ed7d;
+.highcharts-color-0{
+  fill: #00FF08;
 }
-.highcharts-tooltip.highcharts-color-0,
-.highcharts-data-label-connector.highcharts-color-0 {
-  stroke: #90ed7d;
-}
-.highcharts-point.highcharts-color-1,
-.highcharts-legend-item.highcharts-color-1 .highcharts-point,
-.highcharts-tooltip .highcharts-color-1 {
+.highcharts-color-1{
   fill: #FFF700;
 }
-.highcharts-tooltip.highcharts-color-1,
-.highcharts-data-label-connector.highcharts-color-1 {
-  stroke: #FFF700;
-}
-
-.highcharts-point.highcharts-color-2,
-.highcharts-legend-item.highcharts-color-2 .highcharts-point,
-.highcharts-tooltip .highcharts-color-2 {
+.highcharts-color-2{
   fill: #FF0000;
 }
-.highcharts-tooltip.highcharts-color-2,
-.highcharts-data-label-connector.highcharts-color-2 {
-  stroke: #FF0000;
-}
+

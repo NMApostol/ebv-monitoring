@@ -30,23 +30,23 @@ import com.vaadin.flow.theme.lumo.Lumo;
 @JsModule("./styles/shared-styles.js")
 @CssImport("./styles/views/main/main-view.css")
 @PWA(name = "EBV-Monitoring", shortName = "EBV-Monitoring", enableInstallPrompt = false)
-@Theme(value = Lumo.class, variant = Lumo.DARK)
+@Theme(value = Lumo.class, variant = Lumo.LIGHT)
 public class MainView extends AppLayout {
 
-    private final Tabs menu;
+    //private final Tabs menu;
     private H1 viewTitle;
 
     public MainView() {
-        setPrimarySection(Section.DRAWER);
-        addToNavbar(true, createHeaderContent());
-        menu = createMenu();
-        addToDrawer(createDrawerContent(menu));
+        //setPrimarySection(Section.DRAWER);
+        //addToNavbar(true, createHeaderContent());
+        //menu = createMenu();
+        //addToDrawer(createDrawerContent(menu));
     }
 
-    private Component createHeaderContent() {
+    /*private Component createHeaderContent() {
         HorizontalLayout layout = new HorizontalLayout();
         layout.setId("header");
-        layout.getThemeList().set("dark", true);
+        layout.getThemeList().set("light", true);
         layout.setWidthFull();
         layout.setSpacing(false);
         layout.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -54,9 +54,9 @@ public class MainView extends AppLayout {
         viewTitle = new H1();
         layout.add(viewTitle);
         return layout;
-    }
+    }*/
 
-    private Component createDrawerContent(Tabs menu) {
+    /*private Component createDrawerContent(Tabs menu) {
         VerticalLayout layout = new VerticalLayout();
         layout.setSizeFull();
         layout.setPadding(false);
@@ -79,7 +79,7 @@ public class MainView extends AppLayout {
         tabs.setId("tabs");
         tabs.add(createMenuItems());
         return tabs;
-    }
+    }*/
 
     private Component[] createMenuItems() {
         return new Tab[] {
@@ -94,19 +94,19 @@ public class MainView extends AppLayout {
         return tab;
     }
 
-    @Override
+    /*@Override
     protected void afterNavigation() {
         super.afterNavigation();
         getTabForComponent(getContent()).ifPresent(menu::setSelectedTab);
         viewTitle.setText(getCurrentPageTitle());
-    }
+    }*/
 
-    private Optional<Tab> getTabForComponent(Component component) {
+    /*private Optional<Tab> getTabForComponent(Component component) {
         return menu.getChildren()
                 .filter(tab -> ComponentUtil.getData(tab, Class.class)
                         .equals(component.getClass()))
                 .findFirst().map(Tab.class::cast);
-    }
+    }*/
 
     private String getCurrentPageTitle() {
         return getContent().getClass().getAnnotation(PageTitle.class).value();

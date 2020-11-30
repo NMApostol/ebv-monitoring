@@ -13,6 +13,8 @@ import com.vaadin.flow.component.board.Board;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
+import com.vaadin.flow.component.charts.model.style.Color;
+import com.vaadin.flow.component.charts.model.style.SolidColor;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Span;
@@ -40,6 +42,8 @@ import com.vaadin.flow.data.value.ValueChangeMode;
 import com.ebvmonitoring.application.views.main.MainView;
 import org.atmosphere.interceptor.AtmosphereResourceStateRecovery;
 
+import javax.xml.transform.SourceLocator;
+
 
 @Route(value = "list", layout = MainView.class)
 @PageTitle("List")
@@ -56,9 +60,7 @@ public class ListView extends Div implements AfterNavigationObserver {
     private Grid<ServiceBox> serviceBoxGrid;
 
     protected Chart servicestatus;
-
-    /*private Grid.Column<ServiceBox> servicesNameColumn;
-    private Grid.Column<ServiceBox> servicesStatusColumn;*/
+    protected Chart servicesHeatMap;
 
     private Grid.Column<Service> statusImgColumn;
     private Grid.Column<Service> serviceNameColumn;
@@ -78,6 +80,7 @@ public class ListView extends Div implements AfterNavigationObserver {
 
         //------------------------------Pie Chart-----------------------------------------------
         servicestatus = new Chart(ChartType.PIE);
+        servicesHeatMap = new Chart(ChartType.HEATMAP);
 
         Configuration conf = servicestatus.getConfiguration();
 
@@ -86,29 +89,74 @@ public class ListView extends Div implements AfterNavigationObserver {
         Tooltip tooltip = new Tooltip();
         conf.setTooltip(tooltip);
 
-
-
         PlotOptionsPie plotOptions = new PlotOptionsPie();
         plotOptions.setAllowPointSelect(true);
         plotOptions.setCursor(Cursor.POINTER);
-        plotOptions.setShowInLegend(true);
+        plotOptions.setShowInLegend(false);
+        plotOptions.setSize("100%");
 
         conf.setPlotOptions(plotOptions);
 
-        int error = 1;
+        int error = 3;
         int warning = 2;
         int success = 10;
         DataSeries series = new DataSeries();
-        series.add(new DataSeriesItem("Fehler", error));
-        series.add(new DataSeriesItem("Warnung", warning));
-        series.add(new DataSeriesItem("Läuft", success));
+
+        DataSeriesItem fehler = new DataSeriesItem("Fehler", error, 2);
+        series.add(fehler);
+        DataSeriesItem warnung = new DataSeriesItem("Warnung", warning, 1);
+        series.add(warnung);
+        DataSeriesItem laeuft = new DataSeriesItem("Läuft", success, 0);
+        laeuft.setSliced(true);
+        series.add(laeuft);
 
         conf.setSeries(series);
         servicestatus.setVisibilityTogglingDisabled(true);
 
+        //--------------------------------------------------------------------------
+        //Heatmap Chart
+        Configuration config1 = servicesHeatMap.getConfiguration();
+        config1.getChart().setType(ChartType.HEATMAP);
+        config1.getChart().setMarginTop(40);
+        config1.getChart().setMarginBottom(40);
+
+        config1.getTitle().setText("Services");
+
+        config1.getxAxis()
+                .setCategories(" ", " ", " ", " ");
+        config1.getyAxis().setCategories(" ", " ", " ", " ", " ");
+
+        config1.getColorAxis().setMin(0);
+        config1.getColorAxis().setMax(2);
+        SolidColor gruen = new SolidColor(1, 255, 7);
+        config1.getColorAxis().setMinColor(gruen);
+        SolidColor gelb = new SolidColor(255, 247, 0);
+        SolidColor rot = new SolidColor(249, 4, 3);
+        config1.getColorAxis().setMaxColor(rot);
+
+        Stop stop1 = new Stop(0.33f);
+        Stop stop2 = new Stop(0.66f);
+        Stop stop3 = new Stop(1.0f);
+        //config1.getColorAxis().setStops(stop1,stop2,stop3);
+
+        HeatSeries rs = new HeatSeries("Services", getRawData());
+
+        PlotOptionsHeatmap plotOptionsHeatmap = new PlotOptionsHeatmap();
+        plotOptionsHeatmap.setDataLabels(new DataLabels());
+        plotOptionsHeatmap.getDataLabels().setEnabled(false);
+
+        SeriesTooltip tooltip1 = new SeriesTooltip();
+        tooltip1.setHeaderFormat("{series.name}<br/>");
+        tooltip1.setPointFormat("Amount: <b>{point.value}</b> ");
+        plotOptionsHeatmap.setTooltip(tooltip1);
+        config1.setPlotOptions(plotOptionsHeatmap);
+
+        config1.setSeries(rs);
+        //------------------------------------------------------------------------------
         Board board = new Board();
         board.addRow(
-                createBadge("Services", servicesH2, "primary-text"),
+                servicesHeatMap,
+                //createBadge("Services", servicesH2, "primary-text"),
                 servicestatus
         );
 
@@ -120,6 +168,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         Button b1 = new Button("Aktuelle Daten anfordern");
         add(b1);
 
+        //Grid erstellen
         setSizeFull();
         createGrid();
         createGridComponent();
@@ -298,6 +347,13 @@ public class ListView extends Div implements AfterNavigationObserver {
                 createService("images/StatusImgRot.png", "Service 4", "2020-11-23", "12:15", "Failure", "115 ms"),
                 createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
                 createService("images/StatusImgRot.png", "Service 5", "2020-11-23", "12:15", "Failure", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Warning", "113 ms"),
+                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
+                createService("images/StatusImgRot.png", "Service 2", "2020-11-23", "12:15", "Failure", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 3", "2020-11-22", "12:00", "Success", "113 ms"),
+                createService("images/StatusImgRot.png", "Service 4", "2020-11-23", "12:15", "Failure", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
+                createService("images/StatusImgRot.png", "Service 5", "2020-11-23", "12:15", "Failure", "115 ms"),
                 createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Warning", "113 ms")
         );
     }
@@ -332,5 +388,17 @@ public class ListView extends Div implements AfterNavigationObserver {
         gridItems.add(new ServiceBox("Service 1", "läuft"));
         serviceBoxGrid.setItems(gridItems);*/
     }
+
+
+    /**
+     * Raw data to the heatmap chart
+     *
+     * @return Array of arrays of numbers.
+     */
+    private Number[][] getRawData() {
+        return new Number[][] { { 0, 1, 0 }, { 0, 1, 2 }, { 0, 2, 0 },
+                { 0, 3, 1 }, { 0, 4, 2 }};
+    }
+
 
 }

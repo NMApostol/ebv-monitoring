@@ -1,7 +1,5 @@
 package com.ebvmonitoring.application.views.list;
 
-import java.sql.Time;
-import java.sql.Date;
 
 public class Service {
 

@@ -3,7 +3,6 @@ package com.ebvmonitoring.application.views.list;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -13,14 +12,10 @@ import com.vaadin.flow.component.board.Board;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
-import com.vaadin.flow.component.charts.model.style.Color;
 import com.vaadin.flow.component.charts.model.style.SolidColor;
-import com.vaadin.flow.component.html.H2;
-import com.vaadin.flow.component.html.Image;
-import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.timepicker.TimePicker;
 import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.router.*;
@@ -34,19 +29,15 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.gridpro.GridPro;
-import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.ebvmonitoring.application.views.main.MainView;
-import org.atmosphere.interceptor.AtmosphereResourceStateRecovery;
-
-import javax.xml.transform.SourceLocator;
 
 
-@Route(value = "list", layout = MainView.class)
-@PageTitle("List")
+@Route(value = "servicestatus", layout = MainView.class)
+@PageTitle("Servicestatus")
 @CssImport(value = "./styles/views/list/list-view.css", include="lumo-badge")
 @JsModule("@vaadin/vaadin-lumo-styles/badge.js")
 @RouteAlias(value = "", layout = MainView.class)
@@ -55,9 +46,9 @@ public class ListView extends Div implements AfterNavigationObserver {
 
     //------------------------------------------------------------------LOG----------------------------------------------------------------------------------------------------------
     private GridPro<Service> grid;
+    private Grid<ServiceBox> serviceGrid;
     private ListDataProvider<Service> dataProvider;
-
-    private Grid<ServiceBox> serviceBoxGrid;
+    private ListDataProvider<ServiceBox> dataProviderBox;
 
     protected Chart servicestatus;
     protected Chart servicesHeatMap;
@@ -69,21 +60,18 @@ public class ListView extends Div implements AfterNavigationObserver {
     private Grid.Column<Service> statusColumn;
     private Grid.Column<Service> responseColumn;
 
+    private Grid.Column<ServiceBox> statusBoxColumn;
+
     private final H2 servicesH2 = new H2();
 
     public ListView() {
         setId("list-view");
-
-        /*serviceBoxGrid.addColumn(ServiceBox::getServicesName);
-        serviceBoxGrid.addColumn(ServiceBox::getServicesStatus);
-        serviceBoxGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER);*/
 
         //------------------------------Pie Chart-----------------------------------------------
         servicestatus = new Chart(ChartType.PIE);
         servicesHeatMap = new Chart(ChartType.HEATMAP);
 
         Configuration conf = servicestatus.getConfiguration();
-
         conf.setTitle("Servicestatus");
 
         Tooltip tooltip = new Tooltip();
@@ -92,8 +80,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         PlotOptionsPie plotOptions = new PlotOptionsPie();
         plotOptions.setAllowPointSelect(true);
         plotOptions.setCursor(Cursor.POINTER);
-        plotOptions.setShowInLegend(false);
-        plotOptions.setSize("100%");
+        plotOptions.setShowInLegend(true);
 
         conf.setPlotOptions(plotOptions);
 
@@ -123,8 +110,8 @@ public class ListView extends Div implements AfterNavigationObserver {
         config1.getTitle().setText("Services");
 
         config1.getxAxis()
-                .setCategories(" ", " ", " ", " ");
-        config1.getyAxis().setCategories(" ", " ", " ", " ", " ");
+                .setCategories(" ");
+        config1.getyAxis().setCategories(" ");
 
         config1.getColorAxis().setMin(0);
         config1.getColorAxis().setMax(2);
@@ -144,6 +131,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         PlotOptionsHeatmap plotOptionsHeatmap = new PlotOptionsHeatmap();
         plotOptionsHeatmap.setDataLabels(new DataLabels());
         plotOptionsHeatmap.getDataLabels().setEnabled(false);
+        plotOptionsHeatmap.setBorderRadius(5);
 
         SeriesTooltip tooltip1 = new SeriesTooltip();
         tooltip1.setHeaderFormat("{series.name}<br/>");
@@ -153,17 +141,24 @@ public class ListView extends Div implements AfterNavigationObserver {
 
         config1.setSeries(rs);
         //------------------------------------------------------------------------------
+        createServiceBoxGrid();
+        setSizeFull();
+        createServiceBoxComponent();
+        addColumnsToBoxGrid();
+
+        WrapperCard pieChartWrapper = new WrapperCard("wrapper",
+                new Component[] { servicestatus }, "card");
+
+        WrapperCard heatmapWrapper = new WrapperCard("wrapper",
+                new Component[] { servicesHeatMap }, "card");
+
         Board board = new Board();
         board.addRow(
-                servicesHeatMap,
-                //createBadge("Services", servicesH2, "primary-text"),
-                servicestatus
+                heatmapWrapper,
+                pieChartWrapper
         );
 
         add(board);
-        Text textArea = new Text(" LOG");
-        board.addRow(textArea);
-
 
         Button b1 = new Button("Aktuelle Daten anfordern");
         add(b1);
@@ -176,7 +171,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         addFiltersToGrid();
         add(grid);
 
-        WrapperCard gridWrapper = new WrapperCard("wrapper", new Component[] { grid }, "card");
+        WrapperCard gridWrapper = new WrapperCard("wrapper", new Component[] { new H3("LOG"), grid },  "card");
 
         board.addRow(gridWrapper);
 
@@ -186,6 +181,11 @@ public class ListView extends Div implements AfterNavigationObserver {
         createGridComponent();
         addColumnsToGrid();
         addFiltersToGrid();
+    }
+
+    private void createServiceBoxGrid(){
+        createServiceBoxComponent();
+        addColumnsToBoxGrid();
     }
 
     private void createGridComponent() {
@@ -198,6 +198,16 @@ public class ListView extends Div implements AfterNavigationObserver {
         grid.setDataProvider(dataProvider);
     }
 
+    private void createServiceBoxComponent(){
+        serviceGrid = new Grid<>();
+        serviceGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER,
+                GridVariant.LUMO_COLUMN_BORDERS);
+        serviceGrid.setHeight("50%");
+
+        dataProviderBox = new ListDataProvider<>(getServiceBoxes());
+        serviceGrid.setDataProvider(dataProviderBox);
+    }
+
     private void addColumnsToGrid() {
         createServiceImgColumn();
         createServiceNameColumn();
@@ -207,6 +217,26 @@ public class ListView extends Div implements AfterNavigationObserver {
         createResponseTimeColumn();
     }
 
+    private void addColumnsToBoxGrid(){
+        createServiceBoxColumn();
+        createServiceBoxColumn();
+        createServiceBoxColumn();
+
+    }
+
+    private void createServiceBoxColumn(){
+        statusBoxColumn = serviceGrid.addColumn(new ComponentRenderer<>(services -> {
+            HorizontalLayout hl = new HorizontalLayout();
+            hl.setAlignItems(FlexComponent.Alignment.CENTER);
+            Button btn = new Button(services.getServicesStatus());
+            Span span = new Span();
+            span.setClassName("name");
+            span.setText(services.getServicesName());
+            hl.add(span, btn);
+            return hl;
+        })).setComparator( ServiceBox::getServicesName).setAutoWidth(true);
+
+    }
 //-------------------------------------Spalten erstellen---------------------------------------------
 
     private void createServiceImgColumn(){
@@ -358,6 +388,13 @@ public class ListView extends Div implements AfterNavigationObserver {
         );
     }
 
+    private List<ServiceBox> getServiceBoxes(){
+        Button bt = new Button();
+        return Arrays.asList(
+            createServiceBox("Service 1", bt)
+        );
+    }
+
     private Service createService(String statusimg, String servicename, String date, String time,
                                  String status, String response) {
         Service c = new Service();
@@ -371,10 +408,22 @@ public class ListView extends Div implements AfterNavigationObserver {
         return c;
     }
 
+    private ServiceBox createServiceBox(String serviceboxname, Button serviceboxstatus){
+        ServiceBox cb = new ServiceBox();
+        cb.setServicesName(serviceboxname);
+        cb.setServicesStatus(serviceboxstatus);
 
-    private WrapperCard createBadge(String title, H2 h2, String h2ClassName) {
+        return cb;
+    }
+
+
+    private WrapperCard createBadge(String title, H2 h2, String h2ClassName, String description) {
         Span titleSpan = new Span(title);
         h2.addClassName(h2ClassName);
+
+        Span descriptionSpan = new Span(description);
+        descriptionSpan.addClassName("secondary-text");
+
         return new WrapperCard("wrapper",
                 new Component[] { titleSpan, h2 }, "card",
                 "space-m");
@@ -396,8 +445,8 @@ public class ListView extends Div implements AfterNavigationObserver {
      * @return Array of arrays of numbers.
      */
     private Number[][] getRawData() {
-        return new Number[][] { { 0, 1, 0 }, { 0, 1, 2 }, { 0, 2, 0 },
-                { 0, 3, 1 }, { 0, 4, 2 }};
+        return new Number[][] { { 0, 0, 0 }, { 0, 1, 2 }, { 0, 2, 0 },
+                { 0, 3, 1 }, { 0, 4, 2 }, { 1, 0, 0}, { 1, 1, 0}, { 1, 2, 0}, { 1, 3, 0},{ 1, 4, 0}};
     }
 
 

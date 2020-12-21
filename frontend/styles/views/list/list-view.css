@@ -19,7 +19,7 @@ vaadin-grid-pro img {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-vaadin-board {
+.vaadin-board {
   margin: 0 auto;
   width: auto;
 }
@@ -41,9 +41,10 @@ vaadin-board {
 .space-m {
   padding: var(--lumo-space-m);
 }
-vaadin-chart {
-  padding-top: var(--lumo-space-s);
+.text{
+  font-size: x-large;
 }
+
 .highcharts-color-0{
   fill: #00FF08;
 }

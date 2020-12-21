@@ -1,15 +1,18 @@
 package com.ebvmonitoring.application.views.list;
 
 import com.vaadin.flow.component.button.Button;
-import com.vaadin.flow.component.textfield.TextArea;
 
 public class ServiceBox {
     private String servicesName;
-    private String servicesStatus;
+    private Button servicesStatus;
 
-    public ServiceBox(String servicesName, String servicesStatus) {
+    public ServiceBox(String servicesName, Button servicesStatus) {
         this.servicesName = servicesName;
         this.servicesStatus = servicesStatus;
+    }
+
+    public ServiceBox() {
+
     }
 
     public String getServicesName() {
@@ -20,11 +23,11 @@ public class ServiceBox {
         this.servicesName = servicesName;
     }
 
-    public String getServicesStatus() {
+    public Button getServicesStatus() {
         return servicesStatus;
     }
 
-    public void setServicesStatus(String servicesStatus) {
+    public void setServicesStatus(Button servicesStatus) {
         this.servicesStatus = servicesStatus;
     }
 }

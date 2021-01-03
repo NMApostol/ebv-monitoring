@@ -7,12 +7,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.board.Board;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
-import com.vaadin.flow.component.charts.model.style.SolidColor;
+import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.*;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -46,9 +45,7 @@ public class ListView extends Div implements AfterNavigationObserver {
 
     //------------------------------------------------------------------LOG----------------------------------------------------------------------------------------------------------
     private GridPro<Service> grid;
-    private Grid<ServiceBox> serviceGrid;
     private ListDataProvider<Service> dataProvider;
-    private ListDataProvider<ServiceBox> dataProviderBox;
 
     protected Chart servicestatus;
     protected Chart servicesHeatMap;
@@ -60,9 +57,7 @@ public class ListView extends Div implements AfterNavigationObserver {
     private Grid.Column<Service> statusColumn;
     private Grid.Column<Service> responseColumn;
 
-    private Grid.Column<ServiceBox> statusBoxColumn;
-
-    private final H2 servicesH2 = new H2();
+    //private final H2 servicesH2 = new H2();
 
     public ListView() {
         setId("list-view");
@@ -72,7 +67,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         servicesHeatMap = new Chart(ChartType.HEATMAP);
 
         Configuration conf = servicestatus.getConfiguration();
-        conf.setTitle("Servicestatus");
+        //conf.setTitle("Servicestatus");
 
         Tooltip tooltip = new Tooltip();
         conf.setTooltip(tooltip);
@@ -101,56 +96,30 @@ public class ListView extends Div implements AfterNavigationObserver {
         servicestatus.setVisibilityTogglingDisabled(true);
 
         //--------------------------------------------------------------------------
-        //Heatmap Chart
-        Configuration config1 = servicesHeatMap.getConfiguration();
-        config1.getChart().setType(ChartType.HEATMAP);
-        config1.getChart().setMarginTop(40);
-        config1.getChart().setMarginBottom(40);
+        //----------------------------------Buttons für die Services-----------------------------------
+        //for every unique service add Button; Statusfarbe und eigener Abfrage des spezifischen Services
+        FormLayout columnLayout = new FormLayout();
+        columnLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("25em", 1),
+                new FormLayout.ResponsiveStep("32em", 2),
+                new FormLayout.ResponsiveStep("40em", 3));
 
-        config1.getTitle().setText("Services");
+        Button button1 = new Button("Service 1");
+        button1.setWidth("100 sp");
+        Button button2 = new Button("Service 2");
+        Button button3 = new Button("Service 3");
+        Button button4 = new Button("Service 4");
+        Button button5 = new Button("--------------------------------------------------");
 
-        config1.getxAxis()
-                .setCategories(" ");
-        config1.getyAxis().setCategories(" ");
+        columnLayout.add(button1, button2, button3, button4, button5);
 
-        config1.getColorAxis().setMin(0);
-        config1.getColorAxis().setMax(2);
-        SolidColor gruen = new SolidColor(1, 255, 7);
-        config1.getColorAxis().setMinColor(gruen);
-        SolidColor gelb = new SolidColor(255, 247, 0);
-        SolidColor rot = new SolidColor(249, 4, 3);
-        config1.getColorAxis().setMaxColor(rot);
-
-        Stop stop1 = new Stop(0.33f);
-        Stop stop2 = new Stop(0.66f);
-        Stop stop3 = new Stop(1.0f);
-        //config1.getColorAxis().setStops(stop1,stop2,stop3);
-
-        HeatSeries rs = new HeatSeries("Services", getRawData());
-
-        PlotOptionsHeatmap plotOptionsHeatmap = new PlotOptionsHeatmap();
-        plotOptionsHeatmap.setDataLabels(new DataLabels());
-        plotOptionsHeatmap.getDataLabels().setEnabled(false);
-        plotOptionsHeatmap.setBorderRadius(5);
-
-        SeriesTooltip tooltip1 = new SeriesTooltip();
-        tooltip1.setHeaderFormat("{series.name}<br/>");
-        tooltip1.setPointFormat("Amount: <b>{point.value}</b> ");
-        plotOptionsHeatmap.setTooltip(tooltip1);
-        config1.setPlotOptions(plotOptionsHeatmap);
-
-        config1.setSeries(rs);
         //------------------------------------------------------------------------------
-        createServiceBoxGrid();
-        setSizeFull();
-        createServiceBoxComponent();
-        addColumnsToBoxGrid();
 
         WrapperCard pieChartWrapper = new WrapperCard("wrapper",
-                new Component[] { servicestatus }, "card");
+                new Component[] {  servicestatus }, "card");
 
         WrapperCard heatmapWrapper = new WrapperCard("wrapper",
-                new Component[] { servicesHeatMap }, "card");
+                new Component[] {  columnLayout }, "card");
 
         Board board = new Board();
         board.addRow(
@@ -183,11 +152,6 @@ public class ListView extends Div implements AfterNavigationObserver {
         addFiltersToGrid();
     }
 
-    private void createServiceBoxGrid(){
-        createServiceBoxComponent();
-        addColumnsToBoxGrid();
-    }
-
     private void createGridComponent() {
         grid = new GridPro<>();
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER,
@@ -198,16 +162,6 @@ public class ListView extends Div implements AfterNavigationObserver {
         grid.setDataProvider(dataProvider);
     }
 
-    private void createServiceBoxComponent(){
-        serviceGrid = new Grid<>();
-        serviceGrid.addThemeVariants(GridVariant.LUMO_NO_BORDER,
-                GridVariant.LUMO_COLUMN_BORDERS);
-        serviceGrid.setHeight("50%");
-
-        dataProviderBox = new ListDataProvider<>(getServiceBoxes());
-        serviceGrid.setDataProvider(dataProviderBox);
-    }
-
     private void addColumnsToGrid() {
         createServiceImgColumn();
         createServiceNameColumn();
@@ -215,27 +169,6 @@ public class ListView extends Div implements AfterNavigationObserver {
         createTimeColumn();
         createStatusColumn();
         createResponseTimeColumn();
-    }
-
-    private void addColumnsToBoxGrid(){
-        createServiceBoxColumn();
-        createServiceBoxColumn();
-        createServiceBoxColumn();
-
-    }
-
-    private void createServiceBoxColumn(){
-        statusBoxColumn = serviceGrid.addColumn(new ComponentRenderer<>(services -> {
-            HorizontalLayout hl = new HorizontalLayout();
-            hl.setAlignItems(FlexComponent.Alignment.CENTER);
-            Button btn = new Button(services.getServicesStatus());
-            Span span = new Span();
-            span.setClassName("name");
-            span.setText(services.getServicesName());
-            hl.add(span, btn);
-            return hl;
-        })).setComparator( ServiceBox::getServicesName).setAutoWidth(true);
-
     }
 //-------------------------------------Spalten erstellen---------------------------------------------
 
@@ -388,13 +321,6 @@ public class ListView extends Div implements AfterNavigationObserver {
         );
     }
 
-    private List<ServiceBox> getServiceBoxes(){
-        Button bt = new Button();
-        return Arrays.asList(
-            createServiceBox("Service 1", bt)
-        );
-    }
-
     private Service createService(String statusimg, String servicename, String date, String time,
                                  String status, String response) {
         Service c = new Service();
@@ -408,16 +334,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         return c;
     }
 
-    private ServiceBox createServiceBox(String serviceboxname, Button serviceboxstatus){
-        ServiceBox cb = new ServiceBox();
-        cb.setServicesName(serviceboxname);
-        cb.setServicesStatus(serviceboxstatus);
-
-        return cb;
-    }
-
-
-    private WrapperCard createBadge(String title, H2 h2, String h2ClassName, String description) {
+    /*private WrapperCard createBadge(String title, H2 h2, String h2ClassName, String description) {
         Span titleSpan = new Span(title);
         h2.addClassName(h2ClassName);
 
@@ -427,27 +344,10 @@ public class ListView extends Div implements AfterNavigationObserver {
         return new WrapperCard("wrapper",
                 new Component[] { titleSpan, h2 }, "card",
                 "space-m");
-    }
+    }*/
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        servicesH2.setText("Service 1,Service 2, Service 3, Service4, ...");
-
-        /*List<ServiceBox> gridItems = new ArrayList<>();
-        gridItems.add(new ServiceBox("Service 1", "läuft"));
-        serviceBoxGrid.setItems(gridItems);*/
+        //servicesH2.setText("Service 1,Service 2, Service 3, Service4, ...");
     }
-
-
-    /**
-     * Raw data to the heatmap chart
-     *
-     * @return Array of arrays of numbers.
-     */
-    private Number[][] getRawData() {
-        return new Number[][] { { 0, 0, 0 }, { 0, 1, 2 }, { 0, 2, 0 },
-                { 0, 3, 1 }, { 0, 4, 2 }, { 1, 0, 0}, { 1, 1, 0}, { 1, 2, 0}, { 1, 3, 0},{ 1, 4, 0}};
-    }
-
-
 }

@@ -6,6 +6,8 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Optional;
 
+import com.ebvmonitoring.application.views.addjson.AddJSONView;
+import com.ebvmonitoring.application.views.addsoap.AddSOAPView;
 import com.ebvmonitoring.application.views.settings.SettingsView;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.ComponentUtil;
@@ -25,13 +27,10 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.PWA;
 import com.vaadin.flow.theme.Theme;
-import com.ebvmonitoring.application.views.main.MainView;
 import com.ebvmonitoring.application.views.list.ListView;
 import com.vaadin.flow.theme.lumo.Lumo;
 
-/**
- * The main view is a top-level placeholder for other views.
- */
+
 @JsModule("./styles/shared-styles.js")
 @CssImport("./styles/views/main/main-view.css")
 @PWA(name = "EBV-Monitoring", shortName = "EBV-Monitoring", enableInstallPrompt = false)
@@ -47,7 +46,7 @@ public class MainView extends AppLayout {
         menu = createMenu();
         addToDrawer(createDrawerContent(menu));
 
-        try{
+        /*try{
             //step1 load the driver class
             Class.forName("oracle.jdbc.driver.OracleDriver");
 
@@ -66,13 +65,13 @@ public class MainView extends AppLayout {
             //step5 close the connection object
             con.close();
 
-        }catch(Exception e){ System.out.println(e);}
+        }catch(Exception e){ System.out.println(e);}*/
     }
 
     private Component createHeaderContent() {
         HorizontalLayout layout = new HorizontalLayout();
         layout.setId("header");
-        layout.getThemeList().set("light", true);
+        layout.getThemeList().set("dark", true);
         layout.setWidthFull();
         layout.setSpacing(false);
         layout.setAlignItems(FlexComponent.Alignment.CENTER);
@@ -93,7 +92,6 @@ public class MainView extends AppLayout {
         logoLayout.setId("logo");
         logoLayout.setAlignItems(FlexComponent.Alignment.CENTER);
         logoLayout.add(new Image("images/EBV_web_internal-material.png", "EBV-Monitoring logo"));
-        //logoLayout.add(new H1("monitoredEBV"));
         layout.add(logoLayout, menu);
         return layout;
     }
@@ -109,7 +107,10 @@ public class MainView extends AppLayout {
 
     private Component[] createMenuItems() {
         return new Tab[] {
-            createTab("Servicestatus", ListView.class), createTab("Einstellungen", SettingsView.class)
+                createTab("Servicestatus", ListView.class),
+                createTab("Einstellungen", SettingsView.class),
+                createTab("JSON Schnittstellen konfigurieren", AddJSONView.class),
+                createTab("SOAP Schnittstellen konfigurieren", AddSOAPView.class)
         };
     }
 

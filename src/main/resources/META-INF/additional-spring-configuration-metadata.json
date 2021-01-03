@@ -1,0 +1,8 @@
+{
+  "properties": [
+    {
+      "name": "vaadin.compatibilityMode",
+      "type": "java.lang.String",
+      "description": "Description for vaadin.compatibilityMode."
+  }
+] }

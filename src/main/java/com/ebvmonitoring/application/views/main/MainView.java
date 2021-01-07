@@ -6,7 +6,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.Optional;
 
-import com.ebvmonitoring.application.views.addjson.AddJSONView;
+import com.ebvmonitoring.application.views.addrest.AddRESTView;
 import com.ebvmonitoring.application.views.addsoap.AddSOAPView;
 import com.ebvmonitoring.application.views.settings.SettingsView;
 import com.vaadin.flow.component.Component;
@@ -17,6 +17,7 @@ import com.vaadin.flow.component.dependency.CssImport;
 import com.vaadin.flow.component.dependency.JsModule;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -27,14 +28,17 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.server.PWA;
 import com.vaadin.flow.theme.Theme;
-import com.ebvmonitoring.application.views.list.ListView;
+import com.ebvmonitoring.application.views.service.ServiceView;
 import com.vaadin.flow.theme.lumo.Lumo;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 
 
 @JsModule("./styles/shared-styles.js")
 @CssImport("./styles/views/main/main-view.css")
 @PWA(name = "EBV-Monitoring", shortName = "EBV-Monitoring", enableInstallPrompt = false)
 @Theme(value = Lumo.class, variant = Lumo.LIGHT)
+@EnableScheduling
 public class MainView extends AppLayout {
 
     private final Tabs menu;
@@ -46,7 +50,7 @@ public class MainView extends AppLayout {
         menu = createMenu();
         addToDrawer(createDrawerContent(menu));
 
-        /*try{
+        try{
             //step1 load the driver class
             Class.forName("oracle.jdbc.driver.OracleDriver");
 
@@ -65,7 +69,7 @@ public class MainView extends AppLayout {
             //step5 close the connection object
             con.close();
 
-        }catch(Exception e){ System.out.println(e);}*/
+        }catch(Exception e){ System.out.println(e);}
     }
 
     private Component createHeaderContent() {
@@ -107,9 +111,9 @@ public class MainView extends AppLayout {
 
     private Component[] createMenuItems() {
         return new Tab[] {
-                createTab("Servicestatus", ListView.class),
+                createTab("Servicestatus", ServiceView.class),
                 createTab("Einstellungen", SettingsView.class),
-                createTab("JSON Schnittstellen konfigurieren", AddJSONView.class),
+                createTab("REST Schnittstellen konfigurieren", AddRESTView.class),
                 createTab("SOAP Schnittstellen konfigurieren", AddSOAPView.class)
         };
     }
@@ -138,6 +142,4 @@ public class MainView extends AppLayout {
     private String getCurrentPageTitle() {
         return getContent().getClass().getAnnotation(PageTitle.class).value();
     }
-
-
 }

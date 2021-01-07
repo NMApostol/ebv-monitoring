@@ -1,4 +1,4 @@
-package com.ebvmonitoring.application.views.addjson;
+package com.ebvmonitoring.application.views.addrest;
 
 import com.ebvmonitoring.application.views.main.MainView;
 import com.vaadin.flow.component.Component;
@@ -14,33 +14,29 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.BeanValidationBinder;
-import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.router.RouteAlias;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.artur.helpers.CrudServiceDataProvider;
 
-import java.util.Optional;
-
-@Route(value = "add_json", layout = MainView.class)
-@PageTitle("JSON hinzufügen")
+@Route(value = "add_rest", layout = MainView.class)
+@PageTitle("REST Schnittstelle hinzufügen")
 @CssImport("./styles/views/addjson/add-json-view.css")
-@RouteAlias(value = "jsonadd", layout = MainView.class)
-public class AddJSONView extends Div {
+@RouteAlias(value = "restadd", layout = MainView.class)
+public class AddRESTView extends Div {
 
-    private final Grid<JSON_Schst> grid = new Grid<>(JSON_Schst.class, false);
+    private final Grid<REST_Fields> grid = new Grid<>(REST_Fields.class, false);
 
-    private final Button cancel = new Button("Abrechen");
+    private final Button cancel = new Button("Abbrechen");
     private final Button save = new Button("Speichern");
 
     //private final BeanValidationBinder<JSON_Schst> binder;
 
-    //private JSON_Schst jSON_Schst;
+    private REST_Fields rEST_fields;
 
-    public AddJSONView(@Autowired JSON_SchstService jSON_SchstService) {
-        setId("add-json-view");
+    public AddRESTView(@Autowired REST_FieldsService rEST_FieldsService) {
+        setId("add-rest-view");
         // Create UI
         SplitLayout splitLayout = new SplitLayout();
         splitLayout.setSizeFull();
@@ -51,11 +47,9 @@ public class AddJSONView extends Div {
         add(splitLayout);
 
         // Configure Grid
-        grid.addColumn("wert1").setAutoWidth(true);
-        grid.addColumn("wert2").setAutoWidth(true);
-        grid.addColumn("wert3").setAutoWidth(true);
-        grid.addColumn("wert4").setAutoWidth(true);
-        grid.setDataProvider(new CrudServiceDataProvider<>(jSON_SchstService));
+        grid.addColumn("rest_link").setAutoWidth(true);
+        grid.addColumn("string_input").setAutoWidth(true);
+        grid.setDataProvider(new CrudServiceDataProvider<>(rEST_FieldsService));
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.setHeightFull();
 
@@ -82,25 +76,26 @@ public class AddJSONView extends Div {
         binder.bindInstanceFields(this);*/
 
         cancel.addClickListener(e -> {
-            //clearForm();
+            clearForm();
             refreshGrid();
         });
 
-        /*save.addClickListener(e -> {
-            try {
-                if (this.jSON_Schst == null) {
-                    this.jSON_Schst = new JSON_Schst();
+        //------------Backend Code, der die Daten zu einer Schnittstelle umwandelt, wird erstellt-----------------------------
+        save.addClickListener(e -> {
+            //try {
+                if (this.rEST_fields == null) {
+                    this.rEST_fields = new REST_Fields();
                 }
-                binder.writeBean(this.jSON_Schst);
+                //binder.writeBean(this.jSON_Schst);
 
-                jSON_SchstService.update(this.jSON_Schst);
+                rEST_FieldsService.update(this.rEST_fields);
                 clearForm();
                 refreshGrid();
-                Notification.show("JSON_Schst details stored.");
-            } catch (ValidationException validationException) {
+                Notification.show("Schnittstellenbearbeitung abgeschlossen.");
+            /*} catch (ValidationException validationException) {
                 Notification.show("An exception happened while trying to store the jSON_Schst details.");
-            }
-        });*/
+            }*/
+        });
 
     }
 
@@ -113,11 +108,9 @@ public class AddJSONView extends Div {
         editorLayoutDiv.add(editorDiv);
 
         FormLayout formLayout = new FormLayout();
-        TextField wert1 = new TextField("Wert1");
-        TextField wert2 = new TextField("Wert2");
-        TextField wert3 = new TextField("Wert3");
-        TextField wert4 = new TextField("Wert4");
-        Component[] fields = new Component[]{wert1, wert2, wert3, wert4};
+        TextField restlink = new TextField("Link");
+        TextField stringinput = new TextField("String Input");
+        Component[] fields = new Component[]{restlink, stringinput};
 
         for (Component field : fields) {
             ((HasStyle) field).addClassName("full-width");
@@ -153,13 +146,13 @@ public class AddJSONView extends Div {
         grid.getDataProvider().refreshAll();
     }
 
-    /*private void clearForm() {
+    private void clearForm() {
         populateForm(null);
     }
 
-    /*private void populateForm(JSON_Schst value) {
-        this.jSON_Schst = value;
-        binder.readBean(this.jSON_Schst);
+    private void populateForm(REST_Fields value) {
+        this.rEST_fields = value;
+        //binder.readBean(this.jSON_Schst);
 
-    }*/
+    }
 }

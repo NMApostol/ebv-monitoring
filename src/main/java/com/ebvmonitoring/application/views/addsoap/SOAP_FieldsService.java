@@ -5,16 +5,16 @@ import org.springframework.stereotype.Service;
 import org.vaadin.artur.helpers.CrudService;
 
 @Service
-public class SOAP_SchstService extends CrudService<SOAP_Schst, Integer> {
+public class SOAP_FieldsService extends CrudService<SOAP_Fields, Integer> {
 
-    private final SOAP_SchstRepository repository;
+    private final SOAP_FieldsRepository repository;
 
-    public SOAP_SchstService(@Autowired SOAP_SchstRepository repository) {
+    public SOAP_FieldsService(@Autowired SOAP_FieldsRepository repository) {
         this.repository = repository;
     }
 
     @Override
-    protected SOAP_SchstRepository getRepository() {
+    protected SOAP_FieldsRepository getRepository() {
         return repository;
     }
 

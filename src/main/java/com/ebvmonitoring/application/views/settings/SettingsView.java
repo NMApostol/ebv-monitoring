@@ -12,6 +12,7 @@ public class SettingsView extends Div{
 
     public SettingsView() {
         setId("settings-view");
+
         add(new Text("Content placeholder"));
     }
 

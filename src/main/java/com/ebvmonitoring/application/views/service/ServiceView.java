@@ -1,4 +1,4 @@
-package com.ebvmonitoring.application.views.list;
+package com.ebvmonitoring.application.views.service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -7,12 +7,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.board.Board;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.charts.Chart;
 import com.vaadin.flow.component.charts.model.*;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.*;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.timepicker.TimePicker;
@@ -33,14 +35,17 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.ebvmonitoring.application.views.main.MainView;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 
 
 @Route(value = "servicestatus", layout = MainView.class)
 @PageTitle("Servicestatus")
-@CssImport(value = "./styles/views/list/list-view.css", include="lumo-badge")
+@CssImport(value = "./styles/views/service/service-view.css", include="lumo-badge")
 @JsModule("@vaadin/vaadin-lumo-styles/badge.js")
 @RouteAlias(value = "", layout = MainView.class)
-public class ListView extends Div implements AfterNavigationObserver {
+@EnableScheduling
+public class ServiceView extends Div implements AfterNavigationObserver {
 
 
     //------------------------------------------------------------------LOG----------------------------------------------------------------------------------------------------------
@@ -48,7 +53,6 @@ public class ListView extends Div implements AfterNavigationObserver {
     private ListDataProvider<Service> dataProvider;
 
     protected Chart servicestatus;
-    protected Chart servicesHeatMap;
 
     private Grid.Column<Service> statusImgColumn;
     private Grid.Column<Service> serviceNameColumn;
@@ -57,17 +61,12 @@ public class ListView extends Div implements AfterNavigationObserver {
     private Grid.Column<Service> statusColumn;
     private Grid.Column<Service> responseColumn;
 
-    //private final H2 servicesH2 = new H2();
-
-    public ListView() {
-        setId("list-view");
+    public ServiceView() {
+        setId("service-view");
 
         //------------------------------Pie Chart-----------------------------------------------
         servicestatus = new Chart(ChartType.PIE);
-        servicesHeatMap = new Chart(ChartType.HEATMAP);
-
         Configuration conf = servicestatus.getConfiguration();
-        //conf.setTitle("Servicestatus");
 
         Tooltip tooltip = new Tooltip();
         conf.setTooltip(tooltip);
@@ -76,12 +75,12 @@ public class ListView extends Div implements AfterNavigationObserver {
         plotOptions.setAllowPointSelect(true);
         plotOptions.setCursor(Cursor.POINTER);
         plotOptions.setShowInLegend(true);
-
         conf.setPlotOptions(plotOptions);
 
-        int error = 3;
-        int warning = 2;
-        int success = 10;
+        //SQL Statement gibt die drei Daten zurück count status
+        int error = 1; //count servicename where status != 200
+        int warning = 1; //count servicename where status == 200 and servicename-1 != 200
+        int success = 3; //count servicename where status == 200
         DataSeries series = new DataSeries();
 
         DataSeriesItem fehler = new DataSeriesItem("Fehler", error, 2);
@@ -98,39 +97,34 @@ public class ListView extends Div implements AfterNavigationObserver {
         //--------------------------------------------------------------------------
         //----------------------------------Buttons für die Services-----------------------------------
         //for every unique service add Button; Statusfarbe und eigener Abfrage des spezifischen Services
+
         FormLayout columnLayout = new FormLayout();
         columnLayout.setResponsiveSteps(
                 new FormLayout.ResponsiveStep("25em", 1),
                 new FormLayout.ResponsiveStep("32em", 2),
                 new FormLayout.ResponsiveStep("40em", 3));
+        columnLayout.getStyle().set("overflow", "auto");
+
+        String green = "#00FF08";
+        String red = "#FF0000";
+        String yellow = "#FFF700";
+        Text buttoninfo = new Text("Click auf einen Service gibt alle Daten des gedrückten Services wieder");
 
         Button button1 = new Button("Service 1");
-        button1.setWidth("100 sp");
+        button1.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
         Button button2 = new Button("Service 2");
+        button2.getStyle().set("background-color",red).set("color", "black").set("height", "100px");
         Button button3 = new Button("Service 3");
+        button3.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
         Button button4 = new Button("Service 4");
-        Button button5 = new Button("--------------------------------------------------");
+        button4.getStyle().set("background-color",yellow).set("color", "black").set("height", "100px");
+        Button button5 = new Button("Service 5");
+        button5.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
 
-        columnLayout.add(button1, button2, button3, button4, button5);
+        columnLayout.add(button1, button2, button3, button4, button5, button5);
 
         //------------------------------------------------------------------------------
-
-        WrapperCard pieChartWrapper = new WrapperCard("wrapper",
-                new Component[] {  servicestatus }, "card");
-
-        WrapperCard heatmapWrapper = new WrapperCard("wrapper",
-                new Component[] {  columnLayout }, "card");
-
-        Board board = new Board();
-        board.addRow(
-                heatmapWrapper,
-                pieChartWrapper
-        );
-
-        add(board);
-
-        Button b1 = new Button("Aktuelle Daten anfordern");
-        add(b1);
+        Button requestdata = new Button("Aktuelle Daten aller Services abfragen");
 
         //Grid erstellen
         setSizeFull();
@@ -138,13 +132,49 @@ public class ListView extends Div implements AfterNavigationObserver {
         createGridComponent();
         addColumnsToGrid();
         addFiltersToGrid();
-        add(grid);
+        refreshGrid();
+        //add(grid);
 
-        WrapperCard gridWrapper = new WrapperCard("wrapper", new Component[] { new H3("LOG"), grid },  "card");
+        //Wrapper erstellen und festlegen
+        WrapperCard pieChartWrapper = new WrapperCard("wrapper", new Component[] {  servicestatus }, "card");
+        WrapperCard buttonGridWrapper = new WrapperCard("wrapper", new Component[] {  buttoninfo, columnLayout}, "card");
+        WrapperCard logGridWrapper = new WrapperCard("wrapper", new Component[] { new H3("LOG"), grid },  "card");
 
-        board.addRow(gridWrapper);
-
+        Board board = new Board();
+        board.addRow(buttonGridWrapper, pieChartWrapper);
+        board.addRow(requestdata);
+        board.addRow(logGridWrapper);
+        add(board);
     }
+
+    @Scheduled(fixedRate = 1000)
+    private void refreshGrid() {
+        grid.select(null);
+        grid.getDataProvider().refreshAll();
+        Notification.show("Log geupdated");
+        System.out.println("----------------------------------------------------------");
+    }
+
+    //------------Button Erstellung---------------------
+    /*
+    @RequestMapping("/")
+    @Scheduled(cron = "0 0/15 * * * *")
+    private void ButtonCreate(){
+        for(int i = 0; i < getServices().size(); i++) {
+            Button button = new Button();
+            if (getServices().equals("Success")) {
+                button.getStyle().set("background-color","green").set("color", "white");
+            }
+            else if(getServices().equals( "Success") && getServices().equals("Error")) {
+                button.getStyle().set("background-color","yellow").set("color", "white");
+            }
+            else if(getServices().equals( "Error")){
+                button.getStyle().set("background-color","red").set("color", "white");
+            }
+            //callStatusOne(servicename);
+            columnLayout.add(button);
+        }
+    }*/
 
     private void createGrid() {
         createGridComponent();
@@ -218,9 +248,6 @@ public class ListView extends Div implements AfterNavigationObserver {
     private void addFiltersToGrid() {
         HeaderRow filterRow = grid.appendHeaderRow();
 
-        //Status Image (Rot | Grün) Filter
-
-
         //Servicebezeichnung Filter
         TextField serviceFilter = new TextField();
         serviceFilter.setPlaceholder("Filter");
@@ -251,7 +278,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         filterRow.getCell(timeColumn).setComponent(timeFilter);
 
         //Status Filter
-        //ArrayList muss noch auf die verschiedenen HTTP Responses angepasst werden
+        //-------------------------------------------ArrayList muss noch auf die verschiedenen HTTP Responses angepasst werden----------------------------------------
         ComboBox<String> statusFilter = new ComboBox<>();
         statusFilter.setItems(Arrays.asList("Success", "Warning", "Error"));
         statusFilter.setPlaceholder("Filter");
@@ -272,9 +299,9 @@ public class ListView extends Div implements AfterNavigationObserver {
                         responseTimeFilter.getValue())));
         filterRow.getCell(responseColumn).setComponent(responseTimeFilter);
     }
-//---------------------------------------------Equal Funktionen--------------------------------------
-    private boolean areStatusesEqual(Service client,
-                                     ComboBox<String> statusFilter) {
+
+    //---------------------------------------------Equal Funktionen (FIlter)--------------------------------------
+    private boolean areStatusesEqual(Service client, ComboBox<String> statusFilter) {
         String statusFilterValue = statusFilter.getValue();
         if (statusFilterValue != null) {
             return StringUtils.equals(client.getStatus(), statusFilterValue);
@@ -299,15 +326,17 @@ public class ListView extends Div implements AfterNavigationObserver {
         }
         return true;
     }
+
 //--------------------------------------Liste erstellen--------------------------------
 
     //Muss noch auf Datenbankwerte umgeschrieben werden
     private List<Service> getServices() {
         return Arrays.asList(
-                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("images/StatusImgRot.png", "Service 2", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("images/StatusImgGruen.png", "Service 3", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("images/StatusImgRot.png", "Service 4", "2020-11-23", "12:15", "Failure", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 1", "2020-11-23", "12:00", "Success", "113 ms"),
+                createService("images/StatusImgRot.png", "Service 2", "2020-11-23", "12:00", "Failure", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 3", "2020-11-23", "12:00", "Success", "113 ms"),
+                createService("images/StatusImgGruen.png", "Service 4", "2020-11-23", "12:00", "Success", "115 ms"),
+                createService("images/StatusImgGruen.png", "Service 5", "2020-11-23", "12:00", "Success", "115 ms"),
                 createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
                 createService("images/StatusImgRot.png", "Service 5", "2020-11-23", "12:15", "Failure", "115 ms"),
                 createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Warning", "113 ms"),
@@ -321,8 +350,7 @@ public class ListView extends Div implements AfterNavigationObserver {
         );
     }
 
-    private Service createService(String statusimg, String servicename, String date, String time,
-                                 String status, String response) {
+    private Service createService(String statusimg, String servicename, String date, String time, String status, String response) {
         Service c = new Service();
         c.setStatusimg(statusimg);
         c.setService(servicename);
@@ -330,24 +358,11 @@ public class ListView extends Div implements AfterNavigationObserver {
         c.setUhrzeit(time);
         c.setStatus(status);
         c.setAntwortzeit(response);
-
         return c;
     }
 
-    /*private WrapperCard createBadge(String title, H2 h2, String h2ClassName, String description) {
-        Span titleSpan = new Span(title);
-        h2.addClassName(h2ClassName);
-
-        Span descriptionSpan = new Span(description);
-        descriptionSpan.addClassName("secondary-text");
-
-        return new WrapperCard("wrapper",
-                new Component[] { titleSpan, h2 }, "card",
-                "space-m");
-    }*/
-
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        //servicesH2.setText("Service 1,Service 2, Service 3, Service4, ...");
+
     }
 }

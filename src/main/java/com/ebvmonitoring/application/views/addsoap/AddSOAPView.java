@@ -14,7 +14,6 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.splitlayout.SplitLayout;
 import com.vaadin.flow.component.textfield.TextField;
-import com.vaadin.flow.data.binder.BeanValidationBinder;
 import com.vaadin.flow.data.binder.ValidationException;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
@@ -22,25 +21,24 @@ import com.vaadin.flow.router.RouteAlias;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.vaadin.artur.helpers.CrudServiceDataProvider;
 
-import java.util.Optional;
-
 @Route(value = "add_soap", layout = MainView.class)
-@PageTitle("SOAP hinzufügen")
+@PageTitle("SOAP Schnittstelle hinzufügen")
 @CssImport("./styles/views/addsoap/add-soap-view.css")
 @RouteAlias(value = "soapadd", layout = MainView.class)
 public class AddSOAPView extends Div {
 
-    private final Grid<SOAP_Schst> grid = new Grid<>(SOAP_Schst.class, false);
+    private final Grid<SOAP_Fields> grid = new Grid<>(SOAP_Fields.class, false);
 
-    private final Button cancel = new Button("Cancel");
-    private final Button save = new Button("Save");
+    private final Button cancel = new Button("Abbrechen");
+    private final Button save = new Button("Speichern");
 
     //private final BeanValidationBinder<SOAP_Schst> binder;
 
-    //private SOAP_Schst sOAP_Schst;
+    private SOAP_Fields sOAP_Fields;
 
-    public AddSOAPView(@Autowired SOAP_SchstService sOAP_SchstService) {
+    public AddSOAPView(@Autowired SOAP_FieldsService sOAP_FieldsService) {
         setId("add-soap-view");
+
         // Create UI
         SplitLayout splitLayout = new SplitLayout();
         splitLayout.setSizeFull();
@@ -51,9 +49,9 @@ public class AddSOAPView extends Div {
         add(splitLayout);
 
         // Configure Grid
-        grid.addColumn("wert1").setAutoWidth(true);
-        grid.addColumn("wert2").setAutoWidth(true);
-        grid.setDataProvider(new CrudServiceDataProvider<>(sOAP_SchstService));
+        grid.addColumn("soap_link").setAutoWidth(true);
+        grid.addColumn("string_input").setAutoWidth(true);
+        grid.setDataProvider(new CrudServiceDataProvider<>(sOAP_FieldsService));
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.setHeightFull();
 
@@ -70,35 +68,32 @@ public class AddSOAPView extends Div {
             } else {
                 clearForm();
             }
-        });
+        });*/
 
         // Configure Form
-        binder = new BeanValidationBinder<>(SOAP_Schst.class);
+        //binder = new BeanValidationBinder<>(SOAP_Schst.class);
 
         // Bind fields. This where you'd define e.g. validation rules
 
-        binder.bindInstanceFields(this);*/
+        //binder.bindInstanceFields(this);
 
         cancel.addClickListener(e -> {
-            //clearForm();
+            clearForm();
             refreshGrid();
         });
 
-        /*save.addClickListener(e -> {
-            try {
-                if (this.sOAP_Schst == null) {
-                    this.sOAP_Schst = new SOAP_Schst();
-                }
-                binder.writeBean(this.sOAP_Schst);
-
-                sOAP_SchstService.update(this.sOAP_Schst);
-                clearForm();
-                refreshGrid();
-                Notification.show("SOAP_Schst details stored.");
-            } catch (ValidationException validationException) {
-                Notification.show("An exception happened while trying to store the sOAP_Schst details.");
+        //------------Backend Code, der die Daten zu einer Schnittstelle umwandelt, wird erstellt-----------------------------
+        save.addClickListener(e -> {
+            if (this.sOAP_Fields == null) {
+                this.sOAP_Fields = new SOAP_Fields();
             }
-        });*/
+            //binder.writeBean(this.sOAP_Schst);
+
+            sOAP_FieldsService.update(this.sOAP_Fields);
+            clearForm();
+            refreshGrid();
+            Notification.show("Schnittstellenbearbeitung abgeschlossen");
+        });
 
     }
 
@@ -111,9 +106,9 @@ public class AddSOAPView extends Div {
         editorLayoutDiv.add(editorDiv);
 
         FormLayout formLayout = new FormLayout();
-        TextField wert1 = new TextField("Wert1");
-        TextField wert2 = new TextField("Wert2");
-        Component[] fields = new Component[]{wert1, wert2};
+        TextField soaplink = new TextField("Link");
+        TextField stringinput = new TextField("String Input");
+        Component[] fields = new Component[]{soaplink, stringinput};
 
         for (Component field : fields) {
             ((HasStyle) field).addClassName("full-width");
@@ -149,13 +144,13 @@ public class AddSOAPView extends Div {
         grid.getDataProvider().refreshAll();
     }
 
-    /*private void clearForm() {
+    private void clearForm() {
         populateForm(null);
     }
 
-    private void populateForm(SOAP_Schst value) {
-        this.sOAP_Schst = value;
-        binder.readBean(this.sOAP_Schst);
+    private void populateForm(SOAP_Fields value) {
+        this.sOAP_Fields = value;
+        //binder.readBean(this.sOAP_Schst);
 
-    }*/
+    }
 }

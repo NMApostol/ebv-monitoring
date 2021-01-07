@@ -1,4 +1,4 @@
-package com.ebvmonitoring.application.views.list;
+package com.ebvmonitoring.application.views.service;
 
 
 public class Service {

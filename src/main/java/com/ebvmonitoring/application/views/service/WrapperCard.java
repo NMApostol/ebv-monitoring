@@ -1,4 +1,4 @@
-package com.ebvmonitoring.application.views.list;
+package com.ebvmonitoring.application.views.service;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.html.Div;

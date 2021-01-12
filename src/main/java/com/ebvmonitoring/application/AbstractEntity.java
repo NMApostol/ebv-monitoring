@@ -1,4 +1,4 @@
-package com.ebvmonitoring.application.views;
+package com.ebvmonitoring.application;
 
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;

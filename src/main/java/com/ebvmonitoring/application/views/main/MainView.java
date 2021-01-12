@@ -56,13 +56,13 @@ public class MainView extends AppLayout {
 
             //step2 create  the connection object
             Connection con= DriverManager.getConnection(
-                    "jdbc:oracle:thin:@localhost:1521:xe","system","oracle");
+                    "jdbc:oracle:thin:@odbpsebvl.eb.lan.at:1521:ebvdbt.ebvldb","ITMONITOR","B73jGhe$wutj1mfi");
 
             //step3 create the statement object
             Statement stmt=con.createStatement();
 
             //step4 execute query
-            ResultSet rs=stmt.executeQuery("select * from emp");
+            ResultSet rs=stmt.executeQuery("select * from service");
             while(rs.next())
                 System.out.println(rs.getInt(1)+"  "+rs.getString(2)+"  "+rs.getString(3));
 

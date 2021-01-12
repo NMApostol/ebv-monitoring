@@ -4,7 +4,7 @@ package com.ebvmonitoring.application.views.addrest;
 
 
 
-import com.ebvmonitoring.application.views.AbstractEntity;
+import com.ebvmonitoring.application.AbstractEntity;
 
 import javax.persistence.Entity;
 

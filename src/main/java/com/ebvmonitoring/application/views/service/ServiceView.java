@@ -7,7 +7,6 @@ import java.util.*;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Text;
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.board.Board;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.charts.Chart;
@@ -36,15 +35,15 @@ import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.ebvmonitoring.application.views.main.MainView;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 
+@EnableScheduling
 @Route(value = "servicestatus", layout = MainView.class)
 @PageTitle("Servicestatus")
 @CssImport(value = "./styles/views/service/service-view.css", include="lumo-badge")
 @JsModule("@vaadin/vaadin-lumo-styles/badge.js")
 @RouteAlias(value = "", layout = MainView.class)
-@EnableScheduling
 public class ServiceView extends Div implements AfterNavigationObserver{
-
 
     //--------------------------------------------------LOG-------------------------------------------------------------
     protected Chart servicestatus_pie;
@@ -57,103 +56,32 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     private Grid.Column<Service> responseColumn;
     private ListDataProvider<Service> dataProvider;
 
+    private final FormLayout columnLayout = new FormLayout();
     private LocalTime tillnextUpdate = LocalTime.now();
-
-    //--------------
-    int error;
-    int warning;
-    int success;
-    //--------------
+    private Button[] buttonarray;
+    private Text buttoninfo;
+    private Button btn_requestdata;
+    private final DataSeries series = new DataSeries();
+    private int error;
+    private int warning;
+    private int success;
 
     public ServiceView() {
         setId("service-view");
 
-        //------------------------------Pie Chart-----------------------------------------------------------------------
-        servicestatus_pie = new Chart(ChartType.PIE);
-        Configuration conf = servicestatus_pie.getConfiguration();
+        //Buttons erstellen
+        createButtonGrid();
+        createRequestAllServicesButton();
 
-        Tooltip tooltip = new Tooltip();
-        conf.setTooltip(tooltip);
-
-        PlotOptionsPie plotOptions = new PlotOptionsPie();
-        plotOptions.setAllowPointSelect(true);
-        plotOptions.setCursor(Cursor.POINTER);
-        plotOptions.setShowInLegend(true);
-        conf.setPlotOptions(plotOptions);
-
-        //SQL Statement gibt die drei Daten zurück count status
-        error = 1; //count(select * FROM s_service WHERE status != 200)
-        warning = 1; //count(select * FROM s_service WHERE status == 200 and status != 200 ORDER BY DATE_ADDED DESC LIMIT 1)
-        success = 3; //count(select * FROM s_service WHERE status == 200)
-        DataSeries series = new DataSeries();
-
-        DataSeriesItem fehler = new DataSeriesItem("Fehler", error, 2);
-        series.add(fehler);
-        DataSeriesItem warnung = new DataSeriesItem("Warnung", warning, 1);
-        series.add(warnung);
-        DataSeriesItem laeuft = new DataSeriesItem("Läuft", success, 0);
-        laeuft.setSliced(true);
-        series.add(laeuft);
-
-        conf.setSeries(series);
-        servicestatus_pie.setVisibilityTogglingDisabled(true);
-
-        //----------------------------------Buttons für die Services----------------------------------------------------
-        //for every unique service add Button; Statusfarbe und eigener Abfrage des spezifischen Services
-
-        FormLayout columnLayout = new FormLayout();
-        columnLayout.setResponsiveSteps(
-                new FormLayout.ResponsiveStep("25em", 1),
-                new FormLayout.ResponsiveStep("32em", 2),
-                new FormLayout.ResponsiveStep("40em", 3));
-        columnLayout.getStyle().set("overflow", "auto");
-
-        String green = "#00FF08";
-        String red = "#FF0000";
-        String yellow = "#FFF700";
-        Text buttoninfo = new Text("Click auf einen Service gibt alle Daten des gedrückten Services wieder");
-
-        Button button1 = new Button("Service 1");
-        button1.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
-        button1.addClickListener(e -> { Notification.show(button1.getText()); });
-        Button button2 = new Button("Service 2");
-        button2.getStyle().set("background-color",red).set("color", "black").set("height", "100px");
-        Button button3 = new Button("Service 3");
-        button3.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
-        Button button4 = new Button("Service 4");
-        button4.getStyle().set("background-color",yellow).set("color", "black").set("height", "100px");
-        Button button5 = new Button("Service 5");
-        button5.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
-
-        columnLayout.add(button1, button2, button3, button4, button5, button5);
-
-        Button btn_requestdata = new Button("Aktuelle Daten aller Services abfragen");
-        btn_requestdata.addClickListener(e -> {
-            requestAllServices();
-            refreshGrid();
-
-            //error = 10;
-            series.clear();
-            series.add(new DataSeriesItem("Fehler", error,2));
-            series.add(new DataSeriesItem("Warnung", warning,1));
-            series.add(new DataSeriesItem("Läuft", success,0));
-            laeuft.setSliced(true);
-            servicestatus_pie.getConfiguration().setSeries(series);
-            servicestatus_pie.drawChart();
-            servicestatus_pie.setVisibilityTogglingDisabled(true);
-            Notification.show("Alle Services aktualisiert");
-
-            //UI.getCurrent().getPage().reload();
-
-        });
-
-        //--------------------------------------------------------------------------------------------------------------
         //Grid erstellen
         setSizeFull();
         createGrid();
         createGridComponent();
         addColumnsToGrid();
         addFiltersToGrid();
+
+        //PieChart erstellen
+        createPieChart();
 
         //Wrapper erstellen und festlegen
         WrapperCard pieChartWrapper = new WrapperCard("wrapper", new Component[] {servicestatus_pie}, "card");
@@ -165,13 +93,15 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         board.addRow(btn_requestdata);
         board.addRow(logGridWrapper);
         add(board);
-
-        repeatedTasksTest();
     }
 
-    private void refreshGrid() {
-        grid.select(null);
-
+    @Override
+    public void afterNavigation(AfterNavigationEvent event) {
+        DateTimeFormatter df = DateTimeFormatter.ofPattern("mm:ss");
+        LocalTime nextUpdateAt = LocalTime.of(0,15,0);
+        Notification.show("Bis zum nächsten Update: " + df.format(nextUpdateAt));
+        //repeatedTasksTest();
+        autoRefresh();
     }
 
     public LocalTime repeatedTasksTest() {
@@ -199,32 +129,125 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         return tillnextUpdate;
     }
 
+    //-----------------------------Pie Chart erstellen------------------------------------------------------------------
+    private void createPieChart(){
+        //------------------------------Pie Chart-----------------------------------------------------------------------
+        servicestatus_pie = new Chart(ChartType.PIE);
+        Configuration conf = servicestatus_pie.getConfiguration();
+
+        Tooltip tooltip = new Tooltip();
+        conf.setTooltip(tooltip);
+
+        PlotOptionsPie plotOptions = new PlotOptionsPie();
+        plotOptions.setAllowPointSelect(true);
+        plotOptions.setCursor(Cursor.POINTER);
+        plotOptions.setShowInLegend(true);
+        conf.setPlotOptions(plotOptions);
+
+        //SQL Statement gibt die drei Daten zurück count status
+        error = 1; //count(select * FROM s_service WHERE status != 200)
+        warning = 1; //count(select * FROM s_service WHERE status == 200 and status != 200 ORDER BY DATE_ADDED DESC LIMIT 1)
+        success = 3; //count(select * FROM s_service WHERE status == 200)
+
+
+        DataSeriesItem fehler = new DataSeriesItem("Fehler", error, 2);
+        series.add(fehler);
+        DataSeriesItem warnung = new DataSeriesItem("Warnung", warning, 1);
+        series.add(warnung);
+        DataSeriesItem laeuft = new DataSeriesItem("Läuft", success, 0);
+        laeuft.setSliced(true);
+        series.add(laeuft);
+
+        conf.setSeries(series);
+        servicestatus_pie.setVisibilityTogglingDisabled(true);
+    }
+
+    private void refreshPieChart(){
+        //error = x; warning = y; success = z;
+        series.clear();
+        series.add(new DataSeriesItem("Fehler", error,2));
+        series.add(new DataSeriesItem("Warnung", warning,1));
+        DataSeriesItem laeuft = new DataSeriesItem("Läuft", success, 0);
+        laeuft.setSliced(true);
+        series.add(laeuft);
+
+        servicestatus_pie.getConfiguration().setSeries(series);
+        servicestatus_pie.drawChart();
+        servicestatus_pie.setVisibilityTogglingDisabled(true);
+    }
+
+    //------------------------------Button Erstellung-------------------------------------------------------------------
+    private void createButtonGrid(){
+        columnLayout.setResponsiveSteps(
+                new FormLayout.ResponsiveStep("25em", 1),
+                new FormLayout.ResponsiveStep("32em", 2),
+                new FormLayout.ResponsiveStep("40em", 3));
+        columnLayout.getStyle().set("overflow", "auto");
+
+        createButtonGridItems();
+        addButtonGridValues();
+        columnLayout.add(buttonarray);
+    }
+
+    private void createButtonGridItems(){
+        //button = stmt.executeQuery(get db value of schnittstelle)
+        //for i = 0; i < buttons.length; i++){  }
+
+        buttoninfo = new Text("Click auf einen Service gibt alle Daten des gedrückten Services wieder");
+
+        String green = "#00FF08";
+        String red = "#FF0000";
+        String yellow = "#FFF700";
+
+        Button button1 = new Button("Service 1");
+        button1.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
+        Button button2 = new Button("Service 2");
+        button2.getStyle().set("background-color",red).set("color", "black").set("height", "100px");
+        Button button3 = new Button("Service 3");
+        button3.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
+        Button button4 = new Button("Service 4");
+        button4.getStyle().set("background-color",yellow).set("color", "black").set("height", "100px");
+        Button button5 = new Button("Service 5");
+        button5.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
+
+        buttonarray = new Button[] {button1, button2, button3, button4, button5};
+    }
+
+    private void addButtonGridValues(){
+        //call specific CallServices-Methode vom Backend
+        Arrays.stream(buttonarray).forEach(button -> {
+            button.addClickListener(e -> {
+                Notification.show(button.getText() + " aktualisiert");
+                System.out.println(button.getText() + " aktualisiert");
+                refreshGrid();
+                refreshPieChart();
+                refreshButtonGrid();
+            }); //getText wird zu value of Schnittstelle
+        });
+    }
+
+    private void refreshButtonGrid(){
+
+    }
+
+    //------------------------Service Status Abfrage via Button---------------------------------------------------------
+    private void createRequestAllServicesButton(){
+        btn_requestdata = new Button("Aktuelle Daten aller Services abfragen");
+        btn_requestdata.addClickListener(e -> {
+            requestAllServices();
+            refreshGrid();
+            refreshPieChart();
+            Notification.show("Alle Services aktualisiert");
+            //UI.getCurrent().getPage().reload();
+        });
+    }
 
     private void requestAllServices(){
         System.out.println("Log geupdated");
+        //call specific CallServices-Methode vom Backend
     }
 
-    //------------Button Erstellung-------------------------------------------------------------------------------------
-
-    /*@RequestMapping("/")
-    @Scheduled(cron = "0 0/15 * * * *")
-    private void ButtonCreate(){
-        for(int i = 0; i < getServices().size(); i++) {
-            Button button = new Button();
-            if (getServices(status).equals("200")) {
-                button.getStyle().set("background-color","green").set("color", "white");
-            }
-            else if(getServices(status).equals( "200") && getServices(status).equals("404")) {
-                button.getStyle().set("background-color","yellow").set("color", "white");
-            }
-            else if(!getServices(status).equals( "200")){
-                button.getStyle().set("background-color","red").set("color", "white");
-            }
-            callOneStatus(servicename);
-            columnLayout.add(button);
-        }
-    }*/
-
+    //----------------------------------Log erstellen-------------------------------------------------------------------
     private void createGrid() {
         createGridComponent();
         addColumnsToGrid();
@@ -249,8 +272,22 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         createStatusColumn();
         createResponseTimeColumn();
     }
-//-------------------------------------Spalten erstellen----------------------------------------------------------------
 
+    private void refreshGrid() {
+        grid.select(null);
+        grid.getDataProvider().refreshAll();
+    }
+
+    //------------------------------------Refresh-----------------------------------------------------------------------
+    @Scheduled(fixedRate = 5000, initialDelay = 1000)
+    private void autoRefresh(){
+        refreshButtonGrid();
+        refreshPieChart();
+        refreshGrid();
+        System.out.println("Update...");
+    }
+
+    //--------------------------------Spalten erstellen-----------------------------------------------------------------
     private void createServiceImgColumn(){
         Grid.Column<Service> statusImgColumn = grid.addColumn(new ComponentRenderer<>(client -> {
             HorizontalLayout hl = new HorizontalLayout();
@@ -293,7 +330,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                 .setAutoWidth(true);
     }
 
-//---------------------------------------------Filter-------------------------------------------------------------------
+    //--------------------------------------Filter----------------------------------------------------------------------
     private void addFiltersToGrid() {
         HeaderRow filterRow = grid.appendHeaderRow();
 
@@ -349,7 +386,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         filterRow.getCell(responseColumn).setComponent(responseTimeFilter);
     }
 
-    //-----------------------------------------Equal Funktionen (FIlter)------------------------------------------------
+    //------------------------------Equal Funktionen (FIlter)-----------------------------------------------------------
     private boolean areStatusesEqual(Service client, ComboBox<String> statusFilter) {
         String statusFilterValue = statusFilter.getValue();
         if (statusFilterValue != null) {
@@ -376,8 +413,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         return true;
     }
 
-//--------------------------------------Liste erstellen-----------------------------------------------------------------
-
+    //----------------------------------Liste erstellen-----------------------------------------------------------------
     //Muss noch auf Datenbankwerte umgeschrieben werden
     private List<Service> getServices() {
         return Arrays.asList(
@@ -399,8 +435,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         );
     }
 
-    private Service createService(String statusimg, String servicename, String date, String time,
-                                  String status, String response) {
+    private Service createService(String statusimg, String servicename, String date, String time, String status, String response) {
         Service c = new Service();
         c.setStatusimg(statusimg);
         c.setService(servicename);
@@ -409,12 +444,5 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         c.setStatus(status);
         c.setAntwortzeit(response);
         return c;
-    }
-
-    @Override
-    public void afterNavigation(AfterNavigationEvent event) {
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("mm:ss");
-        LocalTime nextUpdateAt = LocalTime.of(0,15,0);
-        Notification.show("Bis zum nächsten Update: " + df.format(nextUpdateAt));
     }
 }

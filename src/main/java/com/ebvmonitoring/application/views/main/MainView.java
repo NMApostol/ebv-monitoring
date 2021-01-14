@@ -49,27 +49,7 @@ public class MainView extends AppLayout {
         addToNavbar(true, createHeaderContent());
         menu = createMenu();
         addToDrawer(createDrawerContent(menu));
-
-        try{
-            //step1 load the driver class
-            Class.forName("oracle.jdbc.driver.OracleDriver");
-
-            //step2 create  the connection object
-            Connection con= DriverManager.getConnection(
-                    "jdbc:oracle:thin:@odbpsebvl.eb.lan.at:1521:ebvdbt.ebvldb","ITMONITOR","B73jGhe$wutj1mfi");
-
-            //step3 create the statement object
-            Statement stmt=con.createStatement();
-
-            //step4 execute query
-            ResultSet rs=stmt.executeQuery("select * from service");
-            while(rs.next())
-                System.out.println(rs.getInt(1)+"  "+rs.getString(2)+"  "+rs.getString(3));
-
-            //step5 close the connection object
-            con.close();
-
-        }catch(Exception e){ System.out.println(e);}
+        callDB();
     }
 
     private Component createHeaderContent() {
@@ -141,5 +121,28 @@ public class MainView extends AppLayout {
 
     private String getCurrentPageTitle() {
         return getContent().getClass().getAnnotation(PageTitle.class).value();
+    }
+
+    private void callDB(){
+        try{
+            //step1 load the driver class
+            Class.forName("oracle.jdbc.driver.OracleDriver");
+
+            //step2 create  the connection object
+            Connection con= DriverManager.getConnection(
+                    "jdbc:oracle:thin:@odbpsebvl.eb.lan.at:1521:ebvdbt.ebvldb","ITMONITOR","B73jGhe$wutj1mfi");
+
+            //step3 create the statement object
+            Statement stmt=con.createStatement();
+
+            //step4 execute query
+            ResultSet rs=stmt.executeQuery("select * from service");
+            while(rs.next())
+                System.out.println(rs.getInt(1)+"  "+rs.getString(2)+"  "+rs.getString(3));
+
+            //step5 close the connection object
+            con.close();
+
+        }catch(Exception e){ System.out.println(e);}
     }
 }

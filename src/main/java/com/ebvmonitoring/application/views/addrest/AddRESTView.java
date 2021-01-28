@@ -47,6 +47,7 @@ public class AddRESTView extends Div {
         add(splitLayout);
 
         // Configure Grid
+        grid.addColumn("rest_name").setAutoWidth(true);
         grid.addColumn("rest_link").setAutoWidth(true);
         grid.addColumn("string_input").setAutoWidth(true);
         grid.setDataProvider(new CrudServiceDataProvider<>(rEST_FieldsService));
@@ -108,6 +109,7 @@ public class AddRESTView extends Div {
         editorLayoutDiv.add(editorDiv);
 
         FormLayout formLayout = new FormLayout();
+        TextField restName = new TextField("Name");
         TextField restlink = new TextField("Link");
         TextField stringinput = new TextField("String Input");
         Component[] fields = new Component[]{restlink, stringinput};

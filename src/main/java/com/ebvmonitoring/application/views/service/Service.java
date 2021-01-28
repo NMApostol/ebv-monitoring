@@ -1,6 +1,5 @@
 package com.ebvmonitoring.application.views.service;
 
-
 public class Service {
 
     private String statusimg;
@@ -9,6 +8,19 @@ public class Service {
     private String uhrzeit;
     private String status;
     private String antwortzeit;
+
+    public Service(String statusimg, String service, String datum, String uhrzeit, String status, String antwortzeit) {
+        this.statusimg = statusimg;
+        this.service = service;
+        this.datum = datum;
+        this.uhrzeit = uhrzeit;
+        this.status = status;
+        this.antwortzeit = antwortzeit;
+    }
+
+    public Service() {
+
+    }
 
     public String getAntwortzeit() {
         return antwortzeit;
@@ -30,8 +42,7 @@ public class Service {
         return uhrzeit;
     }
 
-    public void setUhrzeit(String uhrzeit) {
-        this.uhrzeit = uhrzeit;
+    public void setUhrzeit(String uhrzeit) { this.uhrzeit = uhrzeit;
     }
 
     public String getStatus() {

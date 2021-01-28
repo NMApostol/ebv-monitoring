@@ -13,7 +13,7 @@ vaadin-grid-pro img {
 
   height: var(--lumo-size-m);
   width: var(--lumo-size-m);
-  object-fit: cover;
+  object-fit: contain;
 }
 .name {
   overflow: hidden;

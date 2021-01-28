@@ -1,12 +1,16 @@
 package com.ebvmonitoring.application.views.service;
 
+import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import com.ebvmonitoring.application.RequestServices;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.board.Board;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.charts.Chart;
@@ -57,8 +61,9 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     private ListDataProvider<Service> dataProvider;
 
     private final FormLayout columnLayout = new FormLayout();
-    private LocalTime tillnextUpdate = LocalTime.now();
+    //private final LocalTime tillnextUpdate = LocalTime.now();
     private Button[] buttonarray;
+    private final List<Button> buttonlist = new ArrayList<>(Collections.emptyList());
     private Text buttoninfo;
     private Button btn_requestdata;
     private final DataSeries series = new DataSeries();
@@ -100,34 +105,15 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         DateTimeFormatter df = DateTimeFormatter.ofPattern("mm:ss");
         LocalTime nextUpdateAt = LocalTime.of(0,15,0);
         Notification.show("Bis zum nächsten Update: " + df.format(nextUpdateAt));
-        //repeatedTasksTest();
+        try {
+            RequestServices.sendPOST();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         autoRefresh();
     }
 
-    public LocalTime repeatedTasksTest() {
-        TimerTask repeatedTask = new TimerTask() {
-            final double seconds = 901;
-            int i = 0;
-            final LocalTime time = LocalTime.of(0, 15,0);
-            public void run () {
-                i++;
-                double ii = i % seconds;
-                tillnextUpdate = time.minusSeconds((new Double(ii)).longValue());
-                System.out.println(tillnextUpdate);
-                if (tillnextUpdate.toString().equals("00:00")) {
-                    System.out.println("Aktualisieren...");
-                }
-            }
-        };
-        Timer timer = new Timer("Timer");
-        timer.scheduleAtFixedRate(repeatedTask, 0, 1000);
 
-        if (tillnextUpdate.toString().equals("00:00")) {
-            Notification.show("Aktualisieren...");
-        }
-
-        return tillnextUpdate;
-    }
 
     //-----------------------------Pie Chart erstellen------------------------------------------------------------------
     private void createPieChart(){
@@ -143,12 +129,6 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         plotOptions.setCursor(Cursor.POINTER);
         plotOptions.setShowInLegend(true);
         conf.setPlotOptions(plotOptions);
-
-        //SQL Statement gibt die drei Daten zurück count status
-        error = 1; //count(select * FROM s_service WHERE status != 200)
-        warning = 1; //count(select * FROM s_service WHERE status == 200 and status != 200 ORDER BY DATE_ADDED DESC LIMIT 1)
-        success = 3; //count(select * FROM s_service WHERE status == 200)
-
 
         DataSeriesItem fehler = new DataSeriesItem("Fehler", error, 2);
         series.add(fehler);
@@ -190,51 +170,109 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     }
 
     private void createButtonGridItems(){
-        //button = stmt.executeQuery(get db value of schnittstelle)
-        //for i = 0; i < buttons.length; i++){  }
 
         buttoninfo = new Text("Click auf einen Service gibt alle Daten des gedrückten Services wieder");
-
-        String green = "#00FF08";
-        String red = "#FF0000";
-        String yellow = "#FFF700";
-
-        Button button1 = new Button("Service 1");
-        button1.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
-        Button button2 = new Button("Service 2");
-        button2.getStyle().set("background-color",red).set("color", "black").set("height", "100px");
-        Button button3 = new Button("Service 3");
-        button3.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
-        Button button4 = new Button("Service 4");
-        button4.getStyle().set("background-color",yellow).set("color", "black").set("height", "100px");
-        Button button5 = new Button("Service 5");
-        button5.getStyle().set("background-color",green).set("color", "black").set("height", "100px");
-
-        buttonarray = new Button[] {button1, button2, button3, button4, button5};
+        List<String> servicename = new ArrayList<>(Collections.emptyList());
+        for (int i = 0; i < getServices().size(); i++) {
+            if (!servicename.toString().contains(getServices().get(i).getService())) {
+                Button new_button = new Button(getServices().get(i).getService());
+                buttonlist.add(new_button);
+                buttonarray = buttonlist.toArray(new Button[0]);
+                servicename.add(getServices().get(i).getService());
+            }
+        }
     }
 
     private void addButtonGridValues(){
         //call specific CallServices-Methode vom Backend
-        Arrays.stream(buttonarray).forEach(button -> {
-            button.addClickListener(e -> {
-                Notification.show(button.getText() + " aktualisiert");
-                System.out.println(button.getText() + " aktualisiert");
+        String green = "#00FF08";
+        String red = "#FF0000";
+        String yellow = "#FFF700";
+        for (int i = 0; i < buttonarray.length; i++){
+            switch (getServices().get(i).getStatus()) {
+                case "Success":
+                case "200":
+                    buttonarray[i].getStyle().set("background-color", green).set("color", "black").set("height", "100px");
+                    success += 1;
+                    break;
+                case "Warning":
+                    buttonarray[i].getStyle().set("background-color", yellow).set("color", "black").set("height", "100px");
+                    warning += 1;
+                    break;
+                case "Failure":
+                    buttonarray[i].getStyle().set("background-color", red).set("color", "black").set("height", "100px");
+                    error += 1;
+                    break;
+            }
+
+            int finalI1 = i;
+            buttonlist.get(i).addClickListener(e -> {
+                Notification.show(buttonarray[finalI1].getText() + " aktualisiert"); //getText wird zu value of Schnittstelle
+                System.out.println(buttonarray[finalI1].getText() + " aktualisiert"); //getText wird zu value of Schnittstelle
+                try {
+                    RequestServices.sendPOST();
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                }
+                String statusimg = null;
+                switch (String.valueOf(RequestServices.responseCode)) {
+                    case "200":
+                        statusimg = "images/StatusImgGruen.png";
+                        break;
+                    case "Warning":
+                        /*&& getServices.get(i-1).getStatus().equals("404")*/
+                        statusimg = "images/StatusImgGelb.png";
+                        break;
+                    case "404":
+                        statusimg = "images/StatusImgRot.png";
+                        break;
+                }
+                Service new_service = new Service(statusimg, buttonarray[finalI1].getText(), LocalDate.now().toString(),
+                        LocalTime.now().toString(), String.valueOf(RequestServices.responseCode), "110");
+                getServices().add(0, new_service);
+                grid.getDataProvider().refreshAll();
+
+                buttonarray[finalI1].setEnabled(false);
+                buttonarray[finalI1].getStyle().set("background-color", "lightgrey").set("color", "black").set("height", "100px");
+
+                UI myUI = UI.getCurrent();
+                myUI.setPollInterval(6000);
+                myUI.addPollListener(event -> {
+                    myUI.setPollInterval(-1);
+                    buttonarray[finalI1].setEnabled(true);
+                    switch (getServices().get(finalI1).getStatus()) {
+                        case "Success":
+                        case "200":
+                            buttonarray[finalI1].getStyle().set("background-color", green).set("color", "black").set("height", "100px");
+                            break;
+                        case "Warning":
+                            buttonarray[finalI1].getStyle().set("background-color", yellow).set("color", "black").set("height", "100px");
+                            break;
+                        case "Failure":
+                            buttonarray[finalI1].getStyle().set("background-color", red).set("color", "black").set("height", "100px");
+                            break;
+                    }
+                });
+
                 refreshGrid();
                 refreshPieChart();
-                refreshButtonGrid();
-            }); //getText wird zu value of Schnittstelle
-        });
+            });
+        }
     }
 
     private void refreshButtonGrid(){
-
+        createButtonGridItems();
     }
 
     //------------------------Service Status Abfrage via Button---------------------------------------------------------
     private void createRequestAllServicesButton(){
         btn_requestdata = new Button("Aktuelle Daten aller Services abfragen");
         btn_requestdata.addClickListener(e -> {
-            requestAllServices();
+            try {
+                requestAllServices();
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
+            }
             refreshGrid();
             refreshPieChart();
             Notification.show("Alle Services aktualisiert");
@@ -242,8 +280,10 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         });
     }
 
-    private void requestAllServices(){
+    private void requestAllServices() throws IOException {
         System.out.println("Log geupdated");
+        //RequestServices.sendPOST();
+        System.out.println(RequestServices.responseCode);
         //call specific CallServices-Methode vom Backend
     }
 
@@ -279,12 +319,17 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     }
 
     //------------------------------------Refresh-----------------------------------------------------------------------
-    @Scheduled(fixedRate = 5000, initialDelay = 1000)
+
     private void autoRefresh(){
-        refreshButtonGrid();
-        refreshPieChart();
-        refreshGrid();
-        System.out.println("Update...");
+        UI myUI = UI.getCurrent();
+        myUI.setPollInterval(900000); //alle 15 Minuten (900.000 ms)
+        myUI.addPollListener(event -> {
+            System.out.println("UpdateAll at " + LocalDateTime.now());
+            Notification.show("Alle Services geupdated");
+            refreshButtonGrid();
+            refreshPieChart();
+            refreshGrid();
+        });
     }
 
     //--------------------------------Spalten erstellen-----------------------------------------------------------------
@@ -302,8 +347,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     }
 
     private void createServiceNameColumn() {
-        serviceNameColumn = grid.addColumn(Service::getService, "id").setHeader("Servicebezeichnung").setAutoWidth(true)
-                .setFlexGrow(0);
+        serviceNameColumn = grid.addColumn(Service::getService, "id").setHeader("Servicebezeichnung").setAutoWidth(true);
     }
 
     private void createDateColumn() {
@@ -366,7 +410,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         //Status Filter
         //-------------------------------------------ArrayList muss noch auf die verschiedenen HTTP Responses angepasst werden----------------------------------------
         ComboBox<String> statusFilter = new ComboBox<>();
-        statusFilter.setItems(Arrays.asList("Success", "Warning", "Error"));
+        statusFilter.setItems(Arrays.asList("200", "404", "Success", "Warning", "Error"));
         statusFilter.setPlaceholder("Filter");
         statusFilter.setClearButtonVisible(true);
         statusFilter.setWidth("100%");
@@ -416,33 +460,29 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     //----------------------------------Liste erstellen-----------------------------------------------------------------
     //Muss noch auf Datenbankwerte umgeschrieben werden
     private List<Service> getServices() {
-        return Arrays.asList(
-                createService("images/StatusImgGruen.png", "Service 1", "2020-11-23", "12:00", "Success", "113 ms"),
-                createService("images/StatusImgRot.png", "Service 2", "2020-11-23", "12:00", "Failure", "115 ms"),
-                createService("images/StatusImgGruen.png", "Service 3", "2020-11-23", "12:00", "Success", "113 ms"),
-                createService("images/StatusImgGelb.png", "Service 4", "2020-11-23", "12:00", "Success", "115 ms"),
-                createService("images/StatusImgGruen.png", "Service 5", "2020-11-23", "12:00", "Success", "115 ms"),
-                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("images/StatusImgRot.png", "Service 5", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Warning", "113 ms"),
-                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("images/StatusImgRot.png", "Service 2", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("images/StatusImgGruen.png", "Service 3", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("images/StatusImgRot.png", "Service 4", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Success", "113 ms"),
-                createService("images/StatusImgRot.png", "Service 5", "2020-11-23", "12:15", "Failure", "115 ms"),
-                createService("images/StatusImgGruen.png", "Service 1", "2020-11-22", "12:00", "Warning", "113 ms")
-        );
-    }
-
-    private Service createService(String statusimg, String servicename, String date, String time, String status, String response) {
-        Service c = new Service();
-        c.setStatusimg(statusimg);
-        c.setService(servicename);
-        c.setDatum(date);
-        c.setUhrzeit(time);
-        c.setStatus(status);
-        c.setAntwortzeit(response);
-        return c;
+        return new LinkedList<>(Arrays.asList(
+                new Service("images/StatusImgGruen.png", "s Leasing", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "200", "113 ms"),
+                new Service("images/StatusImgGruen.png", "s Leasing", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "Success", "113 ms"),
+                new Service("images/StatusImgGruen.png", "Service 1", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "Success", "113 ms"),
+                new Service("images/StatusImgRot.png", "Service 2", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "Failure", "115 ms"),
+                new Service("images/StatusImgGruen.png", "Service 3", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "Success", "113 ms"),
+                new Service("images/StatusImgGruen.png", "Service 4", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "Warning", "115 ms"),
+                new Service("images/StatusImgGruen.png", "Service 5", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "Success", "115 ms"),
+                new Service("images/StatusImgGruen.png", "Service 6", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "Success", "115 ms"),
+                new Service("images/StatusImgGruen.png", "Service 7", "2020-11-23",
+                        LocalTime.of(12, 0).toString(), "Success", "115 ms"),
+                new Service("images/StatusImgGruen.png", "Service 7", LocalDate.now().toString(),
+                        LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")), "Success", "115 ms"),
+                new Service("images/StatusImgGruen.png", "Service 8", LocalDate.now().toString(),
+                        LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")), "Success", "115 ms")
+        ));
     }
 }

@@ -31,7 +31,6 @@ import com.vaadin.flow.theme.Theme;
 import com.ebvmonitoring.application.views.service.ServiceView;
 import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 
 
 @JsModule("./styles/shared-styles.js")
@@ -91,8 +90,7 @@ public class MainView extends AppLayout {
     private Component[] createMenuItems() {
         return new Tab[] {
                 createTab("Servicestatus", ServiceView.class),
-                createTab("REST Schnittstellen konfigurieren", AddRESTView.class),
-                createTab("SOAP Schnittstellen konfigurieren", AddSOAPView.class)
+                createTab("Einstellungen", SettingsView.class)
         };
     }
 

@@ -20,8 +20,8 @@ public class AlertEMailController {
         props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
         props.put("mail.smtp.port", "587");
 
-        String myAccount = "nmaletsplay@gmail.com";
-        String password = "nico2001";
+        String myAccount = "xxxxx@gmail.com";
+        String password = "xxxxx";
 
         Session session = Session.getInstance(props, new Authenticator() {
             @Override

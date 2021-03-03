@@ -1,5 +1,6 @@
 package com.ebvmonitoring.application.views.service;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -66,12 +67,17 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     private Button[] buttonarray;
     private final List<Button> buttonlist = new ArrayList<>(Collections.emptyList());
     private final List<String> servicename = new ArrayList<>(Collections.emptyList());
+    private final List<String> services = new ArrayList<>(Collections.emptyList());
     private Text buttoninfo;
     private Button btn_requestdata;
     private final DataSeries series = new DataSeries();
     private int error;
     private int warning;
     private int success;
+    private int farben = 0;
+    private String green = "#00FF08";
+    private String red = "#FF0000";
+    private String yellow = "#FFF700";
 
     public ServiceView() throws Exception {
         setId("service-view");
@@ -101,6 +107,10 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         board.addRow(logGridWrapper);
         add(board);
 
+        /*Properties prop=new Properties();
+        FileInputStream ip= new FileInputStream("src/schnittstellen.cfg");
+        prop.load(ip);
+        System.out.println(prop);*/
         //sendAlertEmail();
 
     }
@@ -109,7 +119,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     public void afterNavigation(AfterNavigationEvent event) {
         DateTimeFormatter df = DateTimeFormatter.ofPattern("mm:ss");
         LocalTime nextUpdateAt = LocalTime.of(0,15,0);
-        Notification.show("Bis zum nächsten Update: " + df.format(nextUpdateAt));
+        //Notification.show("Bis zum nächsten Update: " + df.format(nextUpdateAt));
         try {
             RequestServices.sendPOST();
         } catch (IOException e) {
@@ -189,27 +199,12 @@ public class ServiceView extends Div implements AfterNavigationObserver{
 
     private void addButtonGridValues(){
         //call specific CallServices-Methode vom Backend
-        String green = "#00FF08";
-        String red = "#FF0000";
-        String yellow = "#FFF700";
         for (int i = 0; i < buttonarray.length; i++){
-            switch (getServices().get(i).getStatus()) {
-                case "Success":
-                case "200":
-                    buttonarray[i].getStyle().set("background-color", green).set("color", "black").set("height", "100px");
-                    success += 1;
-                    break;
-                case "Warning":
-                    buttonarray[i].getStyle().set("background-color", yellow).set("color", "black").set("height", "100px");
-                    warning += 1;
-                    break;
-                case "Failure":
-                    buttonarray[i].getStyle().set("background-color", red).set("color", "black").set("height", "100px");
-                    error += 1;
-                    break;
-            }
+
+            buttonGridColours();
 
             int finalI1 = i;
+
             buttonlist.get(i).addClickListener(e -> {
                 Notification.show(buttonarray[finalI1].getText() + " aktualisiert"); //getText wird zu value of Schnittstelle
                 System.out.println(buttonarray[finalI1].getText() + " aktualisiert"); //getText wird zu value of Schnittstelle
@@ -242,13 +237,14 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                 btn_requestdata.setEnabled(false);
                 buttonarray[finalI1].getStyle().set("background-color", "lightgrey");
                 UI myUI = UI.getCurrent();
-                myUI.setPollInterval(6000);
+                myUI.setPollInterval(2000);
                 myUI.addPollListener(event -> {
                     myUI.setPollInterval(-1);
                     for (Button button : buttonarray) {
                         button.setEnabled(true);
                     }
                     btn_requestdata.setEnabled(true);
+
                     switch (getServices().get(finalI1).getStatus()) {
                         case "Success":
                         case "200":
@@ -261,11 +257,45 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                             buttonarray[finalI1].getStyle().set("background-color", red);
                             break;
                     }
+                    refreshPieChart();
                 });
 
                 refreshGrid();
-                refreshPieChart();
+
             });
+        }
+    }
+
+    private void buttonGridColours(){
+        for(int d = 0; d < getServices().size(); d++){
+            if(services.size() == buttonarray.length){
+                break;
+            }
+            else {
+                if(!services.contains(getServices().get(d).getService())){
+                    switch (getServices().get(d).getStatus()) {
+                        case "Success":
+                        case "200":
+                            buttonarray[farben].getStyle().set("background-color", green).set("color", "black").set("height", "100px");
+                            success += 1;
+                            services.add(buttonarray[farben].getText());
+                            farben += 1;
+                            break;
+                        case "Warning":
+                            buttonarray[farben].getStyle().set("background-color", yellow).set("color", "black").set("height", "100px");
+                            warning += 1;
+                            services.add(buttonarray[farben].getText());
+                            farben += 1;
+                            break;
+                        case "Failure":
+                            buttonarray[farben].getStyle().set("background-color", red).set("color", "black").set("height", "100px");
+                            error += 1;
+                            services.add(buttonarray[farben].getText());
+                            farben += 1;
+                            break;
+                    }
+                }
+            }
         }
     }
 
@@ -292,28 +322,16 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                 button.setEnabled(false);
                 button.getStyle().set("background-color", "lightgrey");
             }
-            myUI.setPollInterval(6000);
+            myUI.setPollInterval(2000);
             myUI.addPollListener(event -> {
                 myUI.setPollInterval(-1);
                 btn_requestdata.setEnabled(true);
                 for (int i = 0; i < buttonarray.length; i++) {
                     buttonarray[i].setEnabled(true);
-                    String green = "#00FF08";
-                    String red = "#FF0000";
-                    String yellow = "#FFF700";
-                    switch (getServices().get(i).getStatus()) {
-                        case "Success":
-                        case "200":
-                            buttonarray[i].getStyle().set("background-color", green);
-                            break;
-                        case "Warning":
-                            buttonarray[i].getStyle().set("background-color", yellow);
-                            break;
-                        case "Failure":
-                            buttonarray[i].getStyle().set("background-color", red);
-                            break;
-                    }
                 }
+                farben = 0;
+                services.clear();
+                buttonGridColours();
             });
         });
     }

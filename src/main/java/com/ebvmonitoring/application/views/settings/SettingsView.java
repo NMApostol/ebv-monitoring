@@ -4,6 +4,8 @@ import com.ebvmonitoring.application.views.JavaEmail;
 import com.ebvmonitoring.application.views.addrest.REST_Fields;
 import com.ebvmonitoring.application.views.addsoap.SOAP_Fields;
 import com.ebvmonitoring.application.views.main.MainView;
+import com.vaadin.flow.component.AbstractField;
+import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.crud.BinderCrudEditor;
@@ -22,6 +24,11 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import org.vaadin.tabs.PagedTabs;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Properties;
+
 @Route(value = "settings", layout = MainView.class)
 @PageTitle("Einstellungen")
 public class SettingsView extends Div{
@@ -30,7 +37,7 @@ public class SettingsView extends Div{
     private Crud<SOAP_Fields> crudsoap = new Crud<>(SOAP_Fields.class, createSOAPEditor());
     private VerticalLayout emailLayout = new VerticalLayout();
 
-    public SettingsView() {
+    public SettingsView() throws IOException {
         setId("settings-view");
 
         RESTCrud();
@@ -39,11 +46,19 @@ public class SettingsView extends Div{
 
         VerticalLayout layout = new VerticalLayout();
 
+        Properties prop=new Properties();
+        FileInputStream ip= new FileInputStream("src/schnittstellen.cfg");
+        prop.load(ip);
+        System.out.println(prop);
+
+        TextField cfg = new TextField(prop.toString());
+
         VerticalLayout container = new VerticalLayout();
         PagedTabs tabs = new PagedTabs(container);
         tabs.add("Generelles", emailLayout, false);
         tabs.add("REST Schnittstellen bearbeiten", crud, false);
         tabs.add("SOAP Schnittstellen bearbeiten", crudsoap, false);
+        tabs.add("Config File", cfg, false);
         layout.add(tabs, container);
 
         add(layout);

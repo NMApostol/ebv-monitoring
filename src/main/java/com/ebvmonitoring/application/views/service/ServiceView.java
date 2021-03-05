@@ -75,6 +75,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     private int warning;
     private int success;
     private int farben = 0;
+    private int countdown = 0;
     private String green = "#00FF08";
     private String red = "#FF0000";
     private String yellow = "#FFF700";
@@ -107,10 +108,6 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         board.addRow(logGridWrapper);
         add(board);
 
-        /*Properties prop=new Properties();
-        FileInputStream ip= new FileInputStream("src/schnittstellen.cfg");
-        prop.load(ip);
-        System.out.println(prop);*/
         //sendAlertEmail();
 
     }
@@ -199,10 +196,8 @@ public class ServiceView extends Div implements AfterNavigationObserver{
 
     private void addButtonGridValues(){
         //call specific CallServices-Methode vom Backend
+        buttonGridColours();
         for (int i = 0; i < buttonarray.length; i++){
-
-            buttonGridColours();
-
             int finalI1 = i;
 
             buttonlist.get(i).addClickListener(e -> {
@@ -234,41 +229,90 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                 for (Button button : buttonarray) {
                     button.setEnabled(false);
                 }
+
+
+                switch (buttonarray[finalI1].getStyle().get("background-color")) {
+                    case "#00FF08":
+                        success -= 1;
+                        break;
+                    case "#FFF700":
+                        warning -= 1;
+                        break;
+                    case "#FF0000":
+                        error -= 1;
+                        break;
+                }
+
                 btn_requestdata.setEnabled(false);
                 buttonarray[finalI1].getStyle().set("background-color", "lightgrey");
+
                 UI myUI = UI.getCurrent();
-                myUI.setPollInterval(2000);
+                myUI.setPollInterval(1500);
                 myUI.addPollListener(event -> {
-                    myUI.setPollInterval(-1);
+                    if(countdown==1){
+                        countdown = 0;
+                        System.out.println("Grün: " + success + " Rot: " + warning + " Gelb: " + error);
+                        refreshGrid();
+                        refreshPieChart();
+                        myUI.setPollInterval(-1);
+                    }
+
                     for (Button button : buttonarray) {
                         button.setEnabled(true);
                     }
                     btn_requestdata.setEnabled(true);
 
-                    switch (getServices().get(finalI1).getStatus()) {
-                        case "Success":
-                        case "200":
-                            buttonarray[finalI1].getStyle().set("background-color", green);
-                            break;
-                        case "Warning":
-                            buttonarray[finalI1].getStyle().set("background-color", yellow);
-                            break;
-                        case "Failure":
-                            buttonarray[finalI1].getStyle().set("background-color", red);
-                            break;
+                    for (int d = 0; d < getServices().size(); d++) {
+                        if (buttonarray[finalI1].getText().equals(getServices().get(d).getService())) {
+                            switch (getServices().get(d).getStatus()) {
+                                case "Success":
+                                case "200":
+                                    buttonarray[finalI1].getStyle().set("background-color", green);
+                                    break;
+                                case "Warning":
+                                    buttonarray[finalI1].getStyle().set("background-color", yellow);
+                                    break;
+                                case "Failure":
+                                    buttonarray[finalI1].getStyle().set("background-color", red);
+                                    break;
+                            }
+                        }
                     }
-                    refreshPieChart();
+
                 });
-
-                refreshGrid();
-
+                TimerTask task = new TimerTask() {
+                    public void run() {
+                        switch (buttonarray[finalI1].getStyle().get("background-color")) {
+                            case "#00FF08":
+                                success += 1;
+                                break;
+                            case "#FFF700":
+                                warning += 1;
+                                break;
+                            case "#FF0000":
+                                error += 1;
+                                break;
+                        }
+                        countdown = 1;
+                    }
+                };
+                Timer timer = new Timer("Timer");
+                long delay = 2050;
+                timer.schedule(task, delay);
             });
         }
     }
 
     private void buttonGridColours(){
+
+        farben = 0;
+        services.clear();
+        success = 0;
+        warning = 0;
+        error = 0;
         for(int d = 0; d < getServices().size(); d++){
             if(services.size() == buttonarray.length){
+                System.out.println("Grün: " + success + " Rot: " + warning + " Gelb: " + error);
                 break;
             }
             else {
@@ -312,8 +356,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
             } catch (IOException ioException) {
                 ioException.printStackTrace();
             }
-            refreshGrid();
-            refreshPieChart();
+
             Notification.show("Alle Services aktualisiert");
 
             UI myUI = UI.getCurrent();
@@ -329,9 +372,11 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                 for (int i = 0; i < buttonarray.length; i++) {
                     buttonarray[i].setEnabled(true);
                 }
-                farben = 0;
-                services.clear();
+
                 buttonGridColours();
+                refreshGrid();
+                refreshPieChart();
+                System.out.println("Grün: " + success + " Rot: " + warning + " Gelb: " + error);
             });
         });
     }

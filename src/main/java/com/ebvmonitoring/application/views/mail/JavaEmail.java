@@ -1,4 +1,4 @@
-package com.ebvmonitoring.application.views;
+package com.ebvmonitoring.application.views.mail;
 
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -14,7 +14,9 @@ public class JavaEmail {
 
     public JavaEmail(){}
 
-    public static String[] toEmails = {"xxxxxxx@xxxxx.com"}; //an wen gesendet werden soll
+    public static String[] toEmails = {"Nico.Apostol@ebv-leasing.at"}; //an wen gesendet werden soll
+    public static String fromUser;
+    public static String smtp = "smtp.gmail.com";
 
     public static void JavaEmailMain() throws MessagingException {
         JavaEmail javaEmail = new JavaEmail();
@@ -28,7 +30,7 @@ public class JavaEmail {
         emailProperties.put("mail.smtp.port", "587");
         emailProperties.put("mail.smtp.auth", "true");
         emailProperties.put("mail.smtp.starttls.enable", "true");
-        emailProperties.put("mail.smtp.ssl.trust", "smtp.gmail.com"); //auf outlook office356 statt gmail
+        emailProperties.put("mail.smtp.ssl.trust", smtp);
         mailSession = Session.getDefaultInstance(emailProperties, null);
     }
 
@@ -58,12 +60,11 @@ public class JavaEmail {
         /**
          * Sender's credentials
          * */
-        String fromUser = "xxxx@xxxxx.com"; //hier die helpdesk mail
-        String fromUserEmailPassword = "xxxxx"; //hier das helpdesk passwort
+        fromUser = "nmaletsplay@gmail.com"; //hier die helpdesk mail
+        String fromUserEmailPassword = "Nico2001"; //hier das helpdesk passwort
 
-        String emailHost = "smtp.gmail.com"; //auf outlook office356 statt gmail
         Transport transport = mailSession.getTransport("smtp");
-        transport.connect(emailHost, fromUser, fromUserEmailPassword);
+        transport.connect(smtp, fromUser, fromUserEmailPassword);
         /**
          * Draft the message
          * */

@@ -11,6 +11,8 @@ import java.net.URL;
 public class RequestServices {
 
     public static int responseCode;
+    public static StringBuffer response = new StringBuffer();
+    public static long mstime;
 
     public RequestServices(){
 
@@ -32,22 +34,26 @@ public class RequestServices {
             os.write(POST_PARAMS.getBytes());
             os.flush();
 
+            long start = System.currentTimeMillis();
+            //Abruf des HTTP-Status
+            int responseCode = con.getResponseCode();
+            long end = System.currentTimeMillis();
+            mstime = end - start;
 
             responseCode = con.getResponseCode();
-            //System.out.println("POST Response Code :: " + responseCode);
+            System.out.println("POST Response Code :: " + responseCode);
 
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 BufferedReader in = new BufferedReader(new InputStreamReader(
                         con.getInputStream()));
                 String inputLine;
-                StringBuffer response = new StringBuffer();
 
                 while ((inputLine = in.readLine()) != null) {
                     response.append(inputLine);
                 }
                 in.close();
 
-                //System.out.println(response.toString());
+                System.out.println(response.toString());
             } else {
                 System.out.println("POST request not worked");
             }

@@ -1,16 +1,16 @@
 package com.ebvmonitoring.application.views.service;
 
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.sql.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import com.ebvmonitoring.application.DBConnection;
 import com.ebvmonitoring.application.RequestServices;
-import com.ebvmonitoring.application.views.AlertEMailController;
-import com.ebvmonitoring.application.views.JavaEmail;
+import com.ebvmonitoring.application.views.mail.JavaEmail;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
@@ -63,7 +63,6 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     private ListDataProvider<Service> dataProvider;
 
     private final FormLayout columnLayout = new FormLayout();
-    //private final LocalTime tillnextUpdate = LocalTime.now();
     private Button[] buttonarray;
     private final List<Button> buttonlist = new ArrayList<>(Collections.emptyList());
     private final List<String> servicename = new ArrayList<>(Collections.emptyList());
@@ -79,6 +78,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     private String green = "#00FF08";
     private String red = "#FF0000";
     private String yellow = "#FFF700";
+
 
     public ServiceView() throws Exception {
         setId("service-view");
@@ -110,18 +110,12 @@ public class ServiceView extends Div implements AfterNavigationObserver{
 
         //sendAlertEmail();
 
+
     }
 
     @Override
     public void afterNavigation(AfterNavigationEvent event) {
-        DateTimeFormatter df = DateTimeFormatter.ofPattern("mm:ss");
-        LocalTime nextUpdateAt = LocalTime.of(0,15,0);
-        //Notification.show("Bis zum nächsten Update: " + df.format(nextUpdateAt));
-        try {
-            RequestServices.sendPOST();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
     }
 
 
@@ -201,13 +195,8 @@ public class ServiceView extends Div implements AfterNavigationObserver{
             int finalI1 = i;
 
             buttonlist.get(i).addClickListener(e -> {
-                Notification.show(buttonarray[finalI1].getText() + " aktualisiert"); //getText wird zu value of Schnittstelle
                 System.out.println(buttonarray[finalI1].getText() + " aktualisiert"); //getText wird zu value of Schnittstelle
-                try {
-                    RequestServices.sendPOST();
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                }
+
                 String statusimg = null;
                 switch (String.valueOf(RequestServices.responseCode)) {
                     case "200":
@@ -221,15 +210,26 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                         statusimg = "images/StatusImgRot.png";
                         break;
                 }
-                Service new_service = new Service(statusimg, buttonarray[finalI1].getText(), LocalDate.now().toString(),
-                        LocalTime.now().toString(), String.valueOf(RequestServices.responseCode), "110");
-                getServices().add(0, new_service);
+
+                try {
+                    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+                    Connection dbcon = DBConnection.callDB();
+                    PreparedStatement usedb=dbcon.prepareStatement("USE monitoredebv");
+                    PreparedStatement posted = dbcon.prepareStatement("INSERT INTO rest (url,status,antwortzeit,aufgerufen) " +
+                            "VALUES('"+ buttonarray[finalI1].getText() +"','"+RequestServices.responseCode+"','"+RequestServices.mstime+"'," +
+                            "'"+dtf.format(LocalDateTime.now())+"')");
+                    usedb.executeUpdate();
+                    posted.executeUpdate();
+
+                } catch (SQLException throwables) {
+                    throwables.printStackTrace();
+                }
+
                 grid.getDataProvider().refreshAll();
 
                 for (Button button : buttonarray) {
                     button.setEnabled(false);
                 }
-
 
                 switch (buttonarray[finalI1].getStyle().get("background-color")) {
                     case "#00FF08":
@@ -249,37 +249,41 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                 UI myUI = UI.getCurrent();
                 myUI.setPollInterval(1500);
                 myUI.addPollListener(event -> {
+
                     if(countdown==1){
                         countdown = 0;
                         System.out.println("Grün: " + success + " Rot: " + warning + " Gelb: " + error);
                         refreshGrid();
                         refreshPieChart();
+                        btn_requestdata.setEnabled(true);
+                        for (Button button : buttonarray) {
+                            button.setEnabled(true);
+                        }
+
                         myUI.setPollInterval(-1);
                     }
 
-                    for (Button button : buttonarray) {
-                        button.setEnabled(true);
-                    }
-                    btn_requestdata.setEnabled(true);
-
-                    for (int d = 0; d < getServices().size(); d++) {
-                        if (buttonarray[finalI1].getText().equals(getServices().get(d).getService())) {
-                            switch (getServices().get(d).getStatus()) {
-                                case "Success":
-                                case "200":
-                                    buttonarray[finalI1].getStyle().set("background-color", green);
-                                    break;
-                                case "Warning":
-                                    buttonarray[finalI1].getStyle().set("background-color", yellow);
-                                    break;
-                                case "Failure":
-                                    buttonarray[finalI1].getStyle().set("background-color", red);
-                                    break;
+                    else{
+                        for (int d = 0; d < getServices().size(); d++) {
+                            if (buttonarray[finalI1].getText().equals(getServices().get(d).getService())) {
+                                switch (getServices().get(d).getStatus()) {
+                                    case "Success":
+                                    case "200":
+                                        buttonarray[finalI1].getStyle().set("background-color", green);
+                                        break;
+                                    case "Warning":
+                                        buttonarray[finalI1].getStyle().set("background-color", yellow);
+                                        break;
+                                    case "Failure":
+                                        buttonarray[finalI1].getStyle().set("background-color", red);
+                                        break;
+                                }
                             }
                         }
+                        Notification.show(buttonarray[finalI1].getText() + " aktualisiert");
                     }
-
                 });
+
                 TimerTask task = new TimerTask() {
                     public void run() {
                         switch (buttonarray[finalI1].getStyle().get("background-color")) {
@@ -569,33 +573,42 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     }
 
     //----------------------------------Liste erstellen-----------------------------------------------------------------
-    //Muss noch auf Datenbankwerte umgeschrieben werden
+
     private List<Service> getServices() {
-        return new LinkedList<>(Arrays.asList(
-                new Service("images/StatusImgGruen.png", "s Leasing", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "200", "113 ms"),
-                new Service("images/StatusImgGruen.png", "s Leasing", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "200", "113 ms"),
-                new Service("images/StatusImgGruen.png", "s Leasing", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "Success", "113 ms"),
-                new Service("images/StatusImgGruen.png", "Service 1", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "Success", "113 ms"),
-                new Service("images/StatusImgRot.png", "Service 2", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "Failure", "115 ms"),
-                new Service("images/StatusImgGruen.png", "Service 3", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "Success", "113 ms"),
-                new Service("images/StatusImgGruen.png", "Service 4", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "Warning", "115 ms"),
-                new Service("images/StatusImgGruen.png", "Service 5", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "Success", "115 ms"),
-                new Service("images/StatusImgGruen.png", "Service 6", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "Success", "115 ms"),
-                new Service("images/StatusImgGruen.png", "Service 7", "2020-11-23",
-                        LocalTime.of(12, 0).toString(), "Success", "115 ms"),
-                new Service("images/StatusImgGruen.png", "Service 7", LocalDate.now().toString(),
-                        LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")), "Success", "115 ms"),
-                new Service("images/StatusImgGruen.png", "Service 8", LocalDate.now().toString(),
-                        LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")), "Success", "115 ms")
-        ));
+
+        LinkedList<Service> lkl = new LinkedList<>();
+
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection con= DriverManager.getConnection("jdbc:mysql://127.0.0.1:3306/?user=root","root","");
+
+
+            Statement st = con.createStatement();
+            ResultSet srs = st.executeQuery("SELECT * FROM monitoredebv.rest order by aufgerufen desc");
+            while (srs.next()) {
+                Service service = new Service();
+                service.setService(srs.getString("url"));
+                service.setStatus(srs.getString("status"));
+                service.setAntwortzeit(srs.getString("antwortzeit"));
+                service.setDatum(srs.getString("aufgerufen").substring(0, 10));
+                service.setUhrzeit(srs.getString("aufgerufen").substring(11, 16));
+
+                if (service.getStatus().equals("200")) {
+                    service.setStatusimg("images/StatusImgGruen.png");
+                }
+                else{
+                    service.setStatusimg("images/StatusImgRot.png");
+                }
+                lkl.add(service);
+
+            }
+            con.close();
+
+
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return lkl;
     }
 }

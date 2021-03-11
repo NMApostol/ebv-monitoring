@@ -175,6 +175,12 @@
             <artifactId>paged-tabs</artifactId>
             <version>3.0.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.gwt</groupId>
+            <artifactId>gwt-elemental</artifactId>
+            <version>RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 

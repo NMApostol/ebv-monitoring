@@ -29,13 +29,13 @@ import java.util.Properties;
 @PageTitle("Einstellungen")
 public class SettingsView extends Div{
 
-    private Crud<REST_Fields> crud = new Crud<>(REST_Fields.class, createRESTEditor());
+    //private Crud<REST_Fields> crud = new Crud<>(REST_Fields.class, createRESTEditor());
     private VerticalLayout emailLayout = new VerticalLayout();
 
     public SettingsView() throws IOException {
         setId("settings-view");
 
-        RESTCrud();
+        //RESTCrud();
         generalContent();
 
         VerticalLayout layout = new VerticalLayout();
@@ -47,7 +47,7 @@ public class SettingsView extends Div{
         TextField emailsenderField = new TextField("E-Mail Sender");
         emailsenderField.setClearButtonVisible(true);
         emailsenderField.setErrorMessage("Bitte geben Sie eine gültige E-Mail Adresse ein");
-        emailsenderField.setValue(JavaEmail.toEmails[0]);
+        emailsenderField.setValue(JavaEmail.fromUser);
         emailsenderField.getStyle().set("width", "30%");
 
         TextField emailreceiverField = new TextField("E-Mail Receiver");
@@ -55,6 +55,18 @@ public class SettingsView extends Div{
         emailreceiverField.setErrorMessage("Bitte geben Sie eine gültige E-Mail Adresse ein");
         emailreceiverField.setValue(JavaEmail.toEmails[0]);
         emailreceiverField.getStyle().set("width", "30%");
+
+        TextField smtpField = new TextField("SMTP Host");
+        smtpField.setClearButtonVisible(true);
+        smtpField.setErrorMessage("Bitte geben Sie einen gültigen SMTP Host ein");
+        smtpField.setValue(JavaEmail.smtp_host);
+        smtpField.getStyle().set("width", "30%");
+
+        TextField smtpportField = new TextField("SMTP Port");
+        smtpportField.setClearButtonVisible(true);
+        smtpportField.setErrorMessage("Bitte geben Sie einen gültigen SMTP Host ein");
+        smtpportField.setValue(JavaEmail.smtp_port);
+        smtpportField.getStyle().set("width", "30%");
 
         Button savebutton = new Button("Speichern");
 
@@ -65,8 +77,17 @@ public class SettingsView extends Div{
         Text t1 = new Text("Soll die E-Mail Adresse, an die Warnungen von Servicesgeschickt werden soll, geändert werden.");
 
         Button confirmButton = new Button("Bestätigen", event -> {
-            JavaEmail.toEmails[0] = emailsenderField.getValue();
-            JavaEmail.fromUser = emailreceiverField.getValue();
+            JavaEmail.toEmails[0] = emailreceiverField.getValue();
+            JavaEmail.fromUser = emailsenderField.getValue();
+            JavaEmail.smtp_host = smtpField.getValue();
+            JavaEmail.smtp_port = smtpportField.getValue();
+            System.out.println(emailsenderField.getValue());
+            System.out.println(emailsenderField.getValue());
+            System.out.println(smtpField.getValue());
+            Notification.show("Alerting Email Sender Adresse geändert zu " + emailsenderField.getValue());
+            Notification.show("Alerting Email Receiver Adresse geändert zu " + emailreceiverField.getValue());
+            Notification.show("Alerting Email Sender SMTP Host geändert zu " + smtpField.getValue());
+            Notification.show("Alerting Email Sender SMTP Port geändert zu " + smtpportField.getValue());
             dialog.close();
         });
         Button cancelButton = new Button("Abbrechen", event -> {
@@ -76,17 +97,13 @@ public class SettingsView extends Div{
 
         savebutton.addClickListener(e -> {
             dialog.open();
-            System.out.println(emailsenderField.getValue());
-            System.out.println(emailsenderField.getValue());
-            Notification.show("Alerting Email Sender Adresse geändert zu " + emailsenderField.getValue());
-            Notification.show("Alerting Email Receiver Adresse geändert zu " + emailreceiverField.getValue());
             savebutton.setEnabled(false);
         });
 
-        emailLayout.add(emailsenderField, emailreceiverField, savebutton);
+        emailLayout.add(emailsenderField, smtpField, smtpportField, emailreceiverField, savebutton);
     }
 
-    private void RESTCrud(){
+    /*private void RESTCrud(){
 
         Span footer = new Span();
         footer.getElement().getStyle().set("flex", "1");
@@ -96,13 +113,13 @@ public class SettingsView extends Div{
 
         crud.setToolbar(footer, newItemButton);
 
-        /*PersonDataProvider dataProvider = new PersonDataProvider();
+        *//*PersonDataProvider dataProvider = new PersonDataProvider();
         dataProvider.setSizeChangeListener(count -> footer.setText("Total: " + count));
 
         crud.getGrid().removeColumnByKey("id");
         crud.setDataProvider(dataProvider);
         crud.addSaveListener(e -> dataProvider.persist(e.getItem()));
-        crud.addDeleteListener(e -> dataProvider.delete(e.getItem()));*/
+        crud.addDeleteListener(e -> dataProvider.delete(e.getItem()));*//*
     }
 
     private CrudEditor<REST_Fields> createRESTEditor() {
@@ -117,6 +134,6 @@ public class SettingsView extends Div{
         binder.bind(stringInput, REST_Fields::getString_input, REST_Fields::setString_input);
 
         return new BinderCrudEditor<>(binder, form);
-    }
+    }*/
 
 }

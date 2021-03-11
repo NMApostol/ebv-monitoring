@@ -11,6 +11,8 @@ import java.util.*;
 import com.ebvmonitoring.application.DBConnection;
 import com.ebvmonitoring.application.RequestServices;
 import com.ebvmonitoring.application.views.mail.JavaEmail;
+import com.ebvmonitoring.application.views.settings.Config;
+import com.ebvmonitoring.application.views.settings.REST;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Text;
 import com.vaadin.flow.component.UI;
@@ -42,6 +44,8 @@ import com.vaadin.flow.data.renderer.LocalDateRenderer;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.ebvmonitoring.application.views.main.MainView;
 import org.springframework.scheduling.annotation.EnableScheduling;
+
+import javax.mail.MessagingException;
 
 @EnableScheduling
 @Route(value = "servicestatus", layout = MainView.class)
@@ -79,6 +83,8 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     private String red = "#FF0000";
     private String yellow = "#FFF700";
 
+    public static String errorService;
+
 
     public ServiceView() throws Exception {
         setId("service-view");
@@ -108,7 +114,10 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         board.addRow(logGridWrapper);
         add(board);
 
-        //sendAlertEmail();
+
+        Config.Main();
+
+        autoRefresh();
 
 
     }
@@ -322,7 +331,6 @@ public class ServiceView extends Div implements AfterNavigationObserver{
             else {
                 if(!services.contains(getServices().get(d).getService())){
                     switch (getServices().get(d).getStatus()) {
-                        case "Success":
                         case "200":
                             buttonarray[farben].getStyle().set("background-color", green).set("color", "black").set("height", "100px");
                             success += 1;
@@ -335,7 +343,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                             services.add(buttonarray[farben].getText());
                             farben += 1;
                             break;
-                        case "Failure":
+                        case "404":
                             buttonarray[farben].getStyle().set("background-color", red).set("color", "black").set("height", "100px");
                             error += 1;
                             services.add(buttonarray[farben].getText());
@@ -426,25 +434,20 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     //------------------------------------Refresh-----------------------------------------------------------------------
 
     public void autoRefresh(){
-        /*UI refUI = UI.getCurrent();
+        UI refUI = UI.getCurrent();
         refUI.setPollInterval(900000); //alle 15 Minuten (900.000 ms)
-        refUI.addPollListener(event -> {*/
-            System.out.println("UpdateAll at " + LocalDateTime.now());
+        refUI.addPollListener(event -> {
+            addButtonGridValues();
+            try {
+                sendAlertEmail();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             Notification.show("Alle Services geupdated");
             refreshButtonGrid();
             refreshPieChart();
             refreshGrid();
-        //});
-    }
-
-    public void sendAlertEmail() throws Exception {
-        for (int i = 0; i < buttonarray.length; i++) {
-            if(getServices().get(i).getStatus().equals("Failure")) {
-                JavaEmail.JavaEmailMain();
-                System.out.println("---------------------Email Error------------------------");
-            }
-        }
-
+        });
     }
 
     //--------------------------------Spalten erstellen-----------------------------------------------------------------
@@ -485,7 +488,7 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     }
 
     private void createResponseTimeColumn() {
-        responseColumn = grid.addColumn(Service::getAntwortzeit, "antwortzeit").setHeader("Antwortzeit")
+        responseColumn = grid.addColumn(Service::getAntwortzeit, "antwortzeit").setHeader("Antwortzeit [ms]")
                 .setAutoWidth(true);
     }
 
@@ -610,5 +613,16 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         }
 
         return lkl;
+    }
+
+    public void sendAlertEmail() throws Exception {
+        for (int i = 0; i < buttonarray.length; i++) {
+            if(buttonarray[i].getStyle().get("background-color").equals("#FF0000")) {
+                //errorService = buttonarray[i].getText();
+                JavaEmail.JavaEmailMain();
+                System.out.println("---------------------Email Error------------------------");
+            }
+        }
+
     }
 }

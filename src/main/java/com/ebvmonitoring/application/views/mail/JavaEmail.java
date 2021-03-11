@@ -1,5 +1,7 @@
 package com.ebvmonitoring.application.views.mail;
 
+import com.ebvmonitoring.application.views.service.ServiceView;
+
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Session;
@@ -14,9 +16,10 @@ public class JavaEmail {
 
     public JavaEmail(){}
 
-    public static String[] toEmails = {"Nico.Apostol@ebv-leasing.at"}; //an wen gesendet werden soll
-    public static String fromUser;
-    public static String smtp = "smtp.gmail.com";
+    public static String[] toEmails = {"nico@apostol.at"}; //an wen gesendet werden soll
+    public static String fromUser = "nmaletsplay@gmail.com"; //hier die helpdesk mail
+    public static String smtp_host = "smtp.gmail.com";
+    public static String smtp_port = "587";
 
     public static void JavaEmailMain() throws MessagingException {
         JavaEmail javaEmail = new JavaEmail();
@@ -27,16 +30,16 @@ public class JavaEmail {
 
     private void setMailServerProperties() {
         Properties emailProperties = System.getProperties();
-        emailProperties.put("mail.smtp.port", "587");
+        emailProperties.put("mail.smtp.port", smtp_port);
         emailProperties.put("mail.smtp.auth", "true");
         emailProperties.put("mail.smtp.starttls.enable", "true");
-        emailProperties.put("mail.smtp.ssl.trust", smtp);
+        emailProperties.put("mail.smtp.ssl.trust", smtp_host);
         mailSession = Session.getDefaultInstance(emailProperties, null);
     }
 
     private MimeMessage draftEmailMessage() throws AddressException, MessagingException {
         String emailSubject = "SERVICE WARNUNG!";
-        String emailBody = "Der Service <Hier den Servicename aus der DB einfügen> hat ein Problerm und funktioniert nicht wie sie soll!";
+        String emailBody = "Ein Service hat ein Problerm und funktioniert nicht wie sie soll!";
         MimeMessage emailMessage = new MimeMessage(mailSession);
         /**
          * Set the mail recipients
@@ -60,11 +63,11 @@ public class JavaEmail {
         /**
          * Sender's credentials
          * */
-        fromUser = "nmaletsplay@gmail.com"; //hier die helpdesk mail
-        String fromUserEmailPassword = "Nico2001"; //hier das helpdesk passwort
+
+        String fromUserEmailPassword = "nico2001"; //hier das helpdesk passwort
 
         Transport transport = mailSession.getTransport("smtp");
-        transport.connect(smtp, fromUser, fromUserEmailPassword);
+        transport.connect(smtp_host, fromUser, fromUserEmailPassword);
         /**
          * Draft the message
          * */

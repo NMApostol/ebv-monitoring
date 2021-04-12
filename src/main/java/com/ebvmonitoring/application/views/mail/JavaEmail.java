@@ -17,9 +17,10 @@ public class JavaEmail {
     public JavaEmail(){}
 
     public static String[] toEmails = {"nico@apostol.at"}; //an wen gesendet werden soll
-    public static String fromUser = "nmaletsplay@gmail.com"; //hier die helpdesk mail
+    public static String fromUser = "monitoredebvmail@gmail.com"; //hier die helpdesk mail
     public static String smtp_host = "smtp.gmail.com";
     public static String smtp_port = "587";
+    public static String fromUserPW = "monitoredEBV2021";
 
     public static void JavaEmailMain() throws MessagingException {
         JavaEmail javaEmail = new JavaEmail();
@@ -64,10 +65,9 @@ public class JavaEmail {
          * Sender's credentials
          * */
 
-        String fromUserEmailPassword = "nico2001"; //hier das helpdesk passwort
 
         Transport transport = mailSession.getTransport("smtp");
-        transport.connect(smtp_host, fromUser, fromUserEmailPassword);
+        transport.connect(smtp_host, fromUser, fromUserPW);
         /**
          * Draft the message
          * */

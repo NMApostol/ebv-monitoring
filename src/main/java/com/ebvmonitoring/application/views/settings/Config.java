@@ -8,8 +8,7 @@ import java.util.TimerTask;
 
 public class Config {
 
-
-    public static void Main() {
+    public void Main() {
         try {
             Auslesen();
 
@@ -41,7 +40,7 @@ public class Config {
         String zeile = "";
 
         //Einlesen der Config-Datei
-        BufferedReader b = new BufferedReader(new FileReader("schnittstellen.cfg"));
+        BufferedReader b = new BufferedReader(new FileReader("src/schnittstellen.cfg"));
 
         //Überprüfung, ob die Zeile eh nicht leer ist
         while ((zeile = b.readLine()) != null) {

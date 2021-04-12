@@ -15,6 +15,7 @@ import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.EmailField;
+import com.vaadin.flow.component.textfield.PasswordField;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.binder.Binder;
 import com.vaadin.flow.router.PageTitle;
@@ -30,15 +31,13 @@ import java.util.Properties;
 public class SettingsView extends Div{
 
     //private Crud<REST_Fields> crud = new Crud<>(REST_Fields.class, createRESTEditor());
-    private VerticalLayout emailLayout = new VerticalLayout();
+    private final VerticalLayout emailLayout = new VerticalLayout();
 
     public SettingsView() throws IOException {
         setId("settings-view");
 
         //RESTCrud();
         generalContent();
-
-        VerticalLayout layout = new VerticalLayout();
 
         add(emailLayout);
     }
@@ -49,6 +48,12 @@ public class SettingsView extends Div{
         emailsenderField.setErrorMessage("Bitte geben Sie eine gültige E-Mail Adresse ein");
         emailsenderField.setValue(JavaEmail.fromUser);
         emailsenderField.getStyle().set("width", "30%");
+
+        PasswordField emailsenderPWField = new PasswordField("E-Mail Sender Passwort");
+        emailsenderPWField.setClearButtonVisible(true);
+        emailsenderPWField.setValue(JavaEmail.fromUserPW);
+        emailsenderPWField.setRevealButtonVisible(false);
+        emailsenderPWField.getStyle().set("width", "30%");
 
         TextField emailreceiverField = new TextField("E-Mail Receiver");
         emailreceiverField.setClearButtonVisible(true);
@@ -81,13 +86,11 @@ public class SettingsView extends Div{
             JavaEmail.fromUser = emailsenderField.getValue();
             JavaEmail.smtp_host = smtpField.getValue();
             JavaEmail.smtp_port = smtpportField.getValue();
+            JavaEmail.fromUserPW = emailsenderPWField.getValue();
             System.out.println(emailsenderField.getValue());
             System.out.println(emailsenderField.getValue());
             System.out.println(smtpField.getValue());
-            Notification.show("Alerting Email Sender Adresse geändert zu " + emailsenderField.getValue());
-            Notification.show("Alerting Email Receiver Adresse geändert zu " + emailreceiverField.getValue());
-            Notification.show("Alerting Email Sender SMTP Host geändert zu " + smtpField.getValue());
-            Notification.show("Alerting Email Sender SMTP Port geändert zu " + smtpportField.getValue());
+            Notification.show("Alerting Email Einstellungen gespeichert");
             dialog.close();
         });
         Button cancelButton = new Button("Abbrechen", event -> {
@@ -100,40 +103,7 @@ public class SettingsView extends Div{
             savebutton.setEnabled(false);
         });
 
-        emailLayout.add(emailsenderField, smtpField, smtpportField, emailreceiverField, savebutton);
+        emailLayout.add(emailsenderField, emailsenderPWField, smtpField, smtpportField, emailreceiverField, savebutton);
     }
-
-    /*private void RESTCrud(){
-
-        Span footer = new Span();
-        footer.getElement().getStyle().set("flex", "1");
-
-        Button newItemButton = new Button("REST hinzufügen ...");
-        newItemButton.addClickListener(e -> crud.edit(new REST_Fields(), Crud.EditMode.NEW_ITEM));
-
-        crud.setToolbar(footer, newItemButton);
-
-        *//*PersonDataProvider dataProvider = new PersonDataProvider();
-        dataProvider.setSizeChangeListener(count -> footer.setText("Total: " + count));
-
-        crud.getGrid().removeColumnByKey("id");
-        crud.setDataProvider(dataProvider);
-        crud.addSaveListener(e -> dataProvider.persist(e.getItem()));
-        crud.addDeleteListener(e -> dataProvider.delete(e.getItem()));*//*
-    }
-
-    private CrudEditor<REST_Fields> createRESTEditor() {
-        TextField restName = new TextField("REST Name");
-        TextField restLink = new TextField("REST Link");
-        TextField stringInput = new TextField("String Input");
-        FormLayout form = new FormLayout(restName, restLink, stringInput);
-
-        Binder<REST_Fields> binder = new Binder<>(REST_Fields.class);
-        binder.bind(restName, REST_Fields::getRest_name, REST_Fields::setRest_name);
-        binder.bind(restLink, REST_Fields::getRest_link, REST_Fields::setRest_link);
-        binder.bind(stringInput, REST_Fields::getString_input, REST_Fields::setString_input);
-
-        return new BinderCrudEditor<>(binder, form);
-    }*/
 
 }

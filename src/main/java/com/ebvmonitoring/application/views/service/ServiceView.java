@@ -114,12 +114,8 @@ public class ServiceView extends Div implements AfterNavigationObserver{
         board.addRow(logGridWrapper);
         add(board);
 
-
-        Config.Main();
-
-        autoRefresh();
-
-
+        sendAlertEmail();
+        //autoRefresh();
     }
 
     @Override
@@ -223,11 +219,10 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                 try {
                     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
                     Connection dbcon = DBConnection.callDB();
-                    PreparedStatement usedb=dbcon.prepareStatement("USE monitoredebv");
+                    assert dbcon != null;
                     PreparedStatement posted = dbcon.prepareStatement("INSERT INTO rest (url,status,antwortzeit,aufgerufen) " +
                             "VALUES('"+ buttonarray[finalI1].getText() +"','"+RequestServices.responseCode+"','"+RequestServices.mstime+"'," +
                             "'"+dtf.format(LocalDateTime.now())+"')");
-                    usedb.executeUpdate();
                     posted.executeUpdate();
 
                 } catch (SQLException throwables) {
@@ -369,16 +364,16 @@ public class ServiceView extends Div implements AfterNavigationObserver{
                 ioException.printStackTrace();
             }
 
-            Notification.show("Alle Services aktualisiert");
-
             UI myUI = UI.getCurrent();
             btn_requestdata.setEnabled(false);
             for (Button button : buttonarray) {
                 button.setEnabled(false);
                 button.getStyle().set("background-color", "lightgrey");
             }
+            Notification.show("Alle Services aktualisiert");
             myUI.setPollInterval(2000);
             myUI.addPollListener(event -> {
+
                 myUI.setPollInterval(-1);
                 btn_requestdata.setEnabled(true);
                 for (int i = 0; i < buttonarray.length; i++) {
@@ -434,20 +429,38 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     //------------------------------------Refresh-----------------------------------------------------------------------
 
     public void autoRefresh(){
-        UI refUI = UI.getCurrent();
-        refUI.setPollInterval(900000); //alle 15 Minuten (900.000 ms)
-        refUI.addPollListener(event -> {
-            addButtonGridValues();
-            try {
-                sendAlertEmail();
-            } catch (Exception e) {
-                e.printStackTrace();
+
+        final boolean[] refeshyes = {true};
+        final int[] refresh = {0};
+
+        Timer t = new Timer();
+
+        t.schedule(new TimerTask(){
+
+            @Override
+            public void run() {
+
+                refresh[0] = 1;
+                System.out.println("Services Geupdated");
+
             }
-            Notification.show("Alle Services geupdated");
-            refreshButtonGrid();
-            refreshPieChart();
-            refreshGrid();
-        });
+        }, 0, 900000); //900000
+
+        while (true){
+            if (refresh[0] == 1) {
+                Notification.show("Services Geupdated");
+                System.out.println("Services Geupdated");
+
+                try {
+                    sendAlertEmail();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                refresh[0] = 0;
+
+            }
+        }
+
     }
 
     //--------------------------------Spalten erstellen-----------------------------------------------------------------
@@ -616,8 +629,8 @@ public class ServiceView extends Div implements AfterNavigationObserver{
     }
 
     public void sendAlertEmail() throws Exception {
-        for (int i = 0; i < buttonarray.length; i++) {
-            if(buttonarray[i].getStyle().get("background-color").equals("#FF0000")) {
+        for (Button button : buttonarray) {
+            if (button.getStyle().get("background-color").equals("#FF0000")) {
                 //errorService = buttonarray[i].getText();
                 JavaEmail.JavaEmailMain();
                 System.out.println("---------------------Email Error------------------------");
